@@ -1,5 +1,5 @@
 package org.commands;
 
 interface ExecutableInterface {
-    public void exec();
+    public static void exec(String... args) {}
 }

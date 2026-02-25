@@ -1,14 +1,10 @@
 package org.dataclasses;
 
 import java.util.Objects;
-import org.jspecify.annotations.NonNull;
 
 public class Coordinates {
 
-    @NonNull
     private Integer x;
-
-    @NonNull
     private Integer y;
 
     public Coordinates() {}

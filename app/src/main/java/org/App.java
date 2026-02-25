@@ -5,28 +5,29 @@ package org;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-import javax.xml.crypto.Data;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
+import org.commands.SaveCommand;
 import org.dataclasses.*;
 import org.dataclasses.enums.*;
 
 public class App {
 
-    private static Path storageFile;
+    private static String fileName;
     private static TreeMap<Integer, Movie> collection = new TreeMap<>();
+
+    public static String getStorageFile() {
+        return App.fileName;
+    }
+
+    public static TreeMap<Integer, Movie> getCollection() {
+        return collection;
+    }
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -35,8 +36,10 @@ public class App {
             );
             System.exit(1);
         }
-        storageFile = Paths.get("./" + args[0]);
-        try (InputStream inputStream = Files.newInputStream(storageFile)) {
+        fileName = args[0];
+        try (
+            InputStream inputStream = Files.newInputStream(Paths.get(fileName))
+        ) {
             while (inputStream.available() > 0) {
                 byte input[] = inputStream.readAllBytes();
                 System.out.println(new String(input));
@@ -62,30 +65,8 @@ public class App {
             MpaaRating.PG_13,
             movieOperator
         );
-        try (
-            FileOutputStream outputStream = new FileOutputStream(
-                "testfile",
-                false
-            )
-        ) {
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventWriter eventWriter = outputFactory.createXMLEventWriter(
-                outputStream
-            );
-            XMLEventFactory eventFactory = XMLEventFactory.newFactory();
-            eventWriter.add(eventFactory.createStartDocument());
-            eventWriter.add(eventFactory.createCharacters("\n"));
-            byte[] bytes = testMovie.toXML().getBytes();
-            outputStream.write(bytes);
-            eventWriter.add(eventFactory.createEndDocument());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XMLStreamException e) {
-            e.printStackTrace();
-        }
-
+        collection.put(testMovie.getID(), testMovie);
+        SaveCommand.exec();
         Pattern pattern = Pattern.compile(
             "<Movie.*?>.*?</Movie>",
             Pattern.DOTALL

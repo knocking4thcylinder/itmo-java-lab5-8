@@ -1,14 +1,9 @@
 package org.commands;
 
-class HelpCommand extends Command implements ExecutableInterface {
+class HelpCommand implements ExecutableInterface {
 
-    public HelpCommand() {
-        super("help");
-    }
-
-    @Override
-    public void exec() {
-        if (this.getArgs().length != 0) {
+    public static void exec(String... args) {
+        if (args.length != 0) {
             throw new IllegalArgumentException(
                 "command \"help\" does not accept any arguments"
             );
@@ -17,6 +12,7 @@ class HelpCommand extends Command implements ExecutableInterface {
             """
             help - shows help for all of the commands
             info - shows information about the current state of the Collection
+            save - saves the current state of the collection to a file with the name given to the app on startup
             """
         );
     }

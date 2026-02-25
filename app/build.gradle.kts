@@ -17,13 +17,13 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-    testImplementation(libs.junit.jupiter)
-
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    // This dependency is used by the application.
-    implementation(libs.guava)
+//    // Use JUnit Jupiter for testing.
+//    testImplementation(libs.junit.jupiter)
+//
+//    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+//
+//    // This dependency is used by the application.
+//    implementation(libs.guava)
 
 }
 
@@ -46,9 +46,10 @@ java {
 application {
     // Define the main class for the application.
     mainClass = "org.App"
+    applicationName = "app"
 }
 
-tasks.named<Test>("test") {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
-}
+//tasks.named<Test>("test") {
+//    // Use JUnit Platform for unit tests.
+//    useJUnitPlatform()
+//}
