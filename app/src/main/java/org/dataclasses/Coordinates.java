@@ -29,4 +29,9 @@ public class Coordinates {
     public Integer getY() {
         return this.y;
     }
+
+    @Override
+    public String toString() {
+        return "Coordinates{" + "x=" + x + ", y=" + y + '}';
+    }
 }

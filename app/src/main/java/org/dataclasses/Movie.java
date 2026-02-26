@@ -3,9 +3,9 @@ package org.dataclasses;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Objects;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
@@ -19,25 +19,7 @@ import org.dataclasses.enums.MpaaRating;
 
 public class Movie implements Comparable<Movie> {
 
-    private static HashMap<String, Class<?>> setterArgumentMap = new HashMap<
-        String,
-        Class<?>
-    >();
-
-    static {
-        setterArgumentMap.put("setID", int.class);
-        setterArgumentMap.put("setMinNotUsedID", int.class);
-        setterArgumentMap.put("setName", String.class);
-        setterArgumentMap.put("setCoordinates", Coordinates.class);
-        setterArgumentMap.put("setOscarsCount", int.class);
-        setterArgumentMap.put("setGenre", MovieGenre.class);
-        setterArgumentMap.put("setMpaaRating", MpaaRating.class);
-        setterArgumentMap.put("setOperator", Person.class);
-        setterArgumentMap.put("setId", int.class);
-        setterArgumentMap.put("setCreationDate", java.time.LocalDateTime.class);
-    }
-
-    private static int minNotUsedID = 0;
+    private static int minNotUsedId = 0;
     private int id;
     private String name;
     private Coordinates coordinates;
@@ -48,7 +30,7 @@ public class Movie implements Comparable<Movie> {
     private Person operator;
 
     public Movie() {
-        this.id = minNotUsedID++;
+        this.id = ++minNotUsedId;
         this.creationDate = LocalDateTime.now();
     }
 
@@ -60,7 +42,7 @@ public class Movie implements Comparable<Movie> {
         MpaaRating mpaaRating,
         Person operator
     ) {
-        this.id = minNotUsedID++;
+        this.id = ++minNotUsedId;
         this.creationDate = LocalDateTime.now();
         if (name == null || name.equals("")) {
             throw new IllegalArgumentException(
@@ -89,9 +71,9 @@ public class Movie implements Comparable<Movie> {
         this.operator = operator;
     }
 
-    public static void setMinNotUsedID(int id) {
-        if (id > minNotUsedID) {
-            minNotUsedID = id;
+    public static void setMinNotUsedId(int id) {
+        if (id > minNotUsedId) {
+            minNotUsedId = id;
         }
     }
 
@@ -182,20 +164,36 @@ public class Movie implements Comparable<Movie> {
                     .nextEvent()
                     .asStartElement();
                 String fieldName = startElement.getName().getLocalPart();
+                String fieldSetterName =
+                    "set" +
+                    Character.toUpperCase(fieldName.charAt(0)) +
+                    fieldName.substring(1);
 
                 Field field;
+                Method fieldSetter;
                 try {
                     field = objectClass.getDeclaredField(fieldName);
+                    fieldSetter = objectClass.getDeclaredMethod(
+                        fieldSetterName,
+                        field.getType()
+                    );
                 } catch (NoSuchFieldException e) {
+                    e.printStackTrace();
+                    break;
+                } catch (NoSuchMethodException e) {
                     e.printStackTrace();
                     break;
                 }
 
-                field.setAccessible(true);
+                fieldSetter.setAccessible(true);
+
                 Class<?> fieldType = field.getType();
                 Object value;
 
-                if (eventReader.peek().isCharacters()) {
+                if (
+                    eventReader.peek().isCharacters() &&
+                    !eventReader.peek().asCharacters().isWhiteSpace()
+                ) {
                     String stringValue = eventReader
                         .nextEvent()
                         .asCharacters()
@@ -233,18 +231,21 @@ public class Movie implements Comparable<Movie> {
                 } else {
                     value = readObjectFromXML(eventReader, fieldType);
                 }
-                field.set(instance, value);
+                fieldSetter.invoke(instance, value);
+                System.out.println(
+                    "field " + fieldName + " set with value " + value
+                );
             } else if (event.isEndElement()) {
                 eventReader.nextEvent();
-                return instance;
             } else {
                 eventReader.nextEvent();
             }
         }
-        throw new XMLStreamException(
-            "Reached end of document unexpectedly while parsing " +
-                objectClass.getSimpleName()
-        );
+        return instance;
+        // throw new XMLStreamException(
+        //     "Reached end of document unexpectedly while parsing " +
+        //         objectClass.getSimpleName()
+        // );
     }
 
     //TODO
@@ -260,7 +261,10 @@ public class Movie implements Comparable<Movie> {
                 StartElement startElement = eventReader.peek().asStartElement();
                 if (startElement.getName().getLocalPart().equals("Movie")) {
                     eventReader.nextEvent();
-                    return readObjectFromXML(eventReader, Movie.class);
+                    Movie movie = readObjectFromXML(eventReader, Movie.class);
+                    Movie.minNotUsedId =
+                        Math.max(movie.getId(), Movie.minNotUsedId) + 1;
+                    return movie;
                 }
             }
             eventReader.nextEvent();
@@ -275,7 +279,7 @@ public class Movie implements Comparable<Movie> {
         }
         return Comparator.comparing(Movie::getName)
             .thenComparingInt(Movie::getOscarsCount)
-            .thenComparingInt(Movie::getID)
+            .thenComparingInt(Movie::getId)
             .compare(this, o);
     }
 
@@ -283,7 +287,7 @@ public class Movie implements Comparable<Movie> {
         return this.creationDate;
     }
 
-    public int getID() {
+    public int getId() {
         return this.id;
     }
 
@@ -350,7 +354,40 @@ public class Movie implements Comparable<Movie> {
         );
     }
 
+    private void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    private void setId(int id) {
+        this.id = id;
+    }
+
     public void setOperator(Person operator) {
         this.operator = operator;
+    }
+
+    @Override
+    public String toString() {
+        return (
+            "Movie{" +
+            "id=" +
+            id +
+            ", name='" +
+            name +
+            '\'' +
+            ", coordinates=" +
+            coordinates +
+            ", creationDate=" +
+            creationDate +
+            ", oscarsCount=" +
+            oscarsCount +
+            ", genre=" +
+            genre +
+            ", mpaaRating=" +
+            mpaaRating +
+            ", operator=" +
+            operator +
+            '}'
+        );
     }
 }

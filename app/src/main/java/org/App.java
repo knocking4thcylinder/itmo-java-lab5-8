@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-import org.commands.SaveCommand;
+import org.commands.CommandInvoker;
 import org.dataclasses.*;
 import org.dataclasses.enums.*;
 
@@ -37,50 +37,43 @@ public class App {
             System.exit(1);
         }
         fileName = args[0];
-        try (
-            InputStream inputStream = Files.newInputStream(Paths.get(fileName))
-        ) {
-            while (inputStream.available() > 0) {
-                byte input[] = inputStream.readAllBytes();
-                System.out.println(new String(input));
-            }
-        } catch (IOException e) {
-            System.out.println(e.toString());
-        }
-        Location operatorLocation = new Location(515074L, -0.1278, "London");
-        Person movieOperator = new Person(
-            "Christopher Nolan",
-            78.5,
-            "PASSPORT98765",
-            Country.CHINA,
-            operatorLocation
-        );
-        Coordinates movieCoordinates = new Coordinates(150, 350);
-
-        Movie testMovie = new Movie(
-            "Inception",
-            movieCoordinates,
-            4, // oscarsCount > 0
-            MovieGenre.ADVENTURE,
-            MpaaRating.PG_13,
-            movieOperator
-        );
-        collection.put(testMovie.getID(), testMovie);
-        SaveCommand.exec();
         Pattern pattern = Pattern.compile(
             "<Movie.*?>.*?</Movie>",
             Pattern.DOTALL
         );
 
-        try (Scanner scanner = new Scanner(new File("./testfile"), "UTF-8")) {
+        try (Scanner scanner = new Scanner(new File(fileName), "UTF-8")) {
             while (scanner.findWithinHorizon(pattern, 0) != null) {
                 Movie testmovie2 = Movie.fromXML(scanner.match().group(0));
-                collection.put(testmovie2.getID(), testmovie2);
+                collection.put(testmovie2.getId(), testmovie2);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        // Location operatorLocation = new Location(515074L, -0.1278, "London");
+        // Person movieOperator = new Person(
+        //     "Christopher Nolan",
+        //     78.5,
+        //     "PASSPORT98765",
+        //     Country.CHINA,
+        //     operatorLocation
+        // );
+        // Coordinates movieCoordinates = new Coordinates(150, 350);
+
+        // Movie testMovie = new Movie(
+        //     "Inception",
+        //     movieCoordinates,
+        //     4, // oscarsCount > 0
+        //     MovieGenre.ADVENTURE,
+        //     MpaaRating.PG_13,
+        //     movieOperator
+        // );
+        // collection.put(testMovie.getID(), testMovie);
+        CommandInvoker invoker = new CommandInvoker();
+        invoker.invoke("help");
+        invoker.invoke("info");
+        // invoker.invoke("save");
     }
 }

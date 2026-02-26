@@ -108,4 +108,24 @@ public class Person {
             "Person.location cannot be null"
         );
     }
+
+    @Override
+    public String toString() {
+        return (
+            "Person{" +
+            "name='" +
+            name +
+            '\'' +
+            ", weight=" +
+            weight +
+            ", passportID='" +
+            passportID +
+            '\'' +
+            ", nationality=" +
+            nationality +
+            ", location=" +
+            location +
+            '}'
+        );
+    }
 }

@@ -43,4 +43,11 @@ public class Location {
     public String getName() {
         return this.name;
     }
+
+    @Override
+    public String toString() {
+        return (
+            "Location{" + "x=" + x + ", y=" + y + ", name='" + name + '\'' + '}'
+        );
+    }
 }
