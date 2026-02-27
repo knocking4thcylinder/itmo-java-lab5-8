@@ -155,11 +155,13 @@ public class Movie implements Comparable<Movie> {
         Class<T> objectClass
     ) throws Exception {
         T instance = objectClass.getDeclaredConstructor().newInstance();
+        int parsingDepth = 0;
 
         while (eventReader.hasNext()) {
             XMLEvent event = eventReader.peek();
 
             if (event.isStartElement()) {
+                parsingDepth++;
                 StartElement startElement = eventReader
                     .nextEvent()
                     .asStartElement();
@@ -237,6 +239,9 @@ public class Movie implements Comparable<Movie> {
                 );
             } else if (event.isEndElement()) {
                 eventReader.nextEvent();
+                if (parsingDepth-- <= 0) {
+                    break;
+                }
             } else {
                 eventReader.nextEvent();
             }

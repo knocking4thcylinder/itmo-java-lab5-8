@@ -5,16 +5,11 @@ package org;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
 import org.dataclasses.*;
-import org.dataclasses.enums.*;
 
 public class App {
 
