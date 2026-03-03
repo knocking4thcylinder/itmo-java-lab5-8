@@ -1,6 +1,8 @@
 package org.commands;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.rmi.NoSuchObjectException;
 import java.util.HashMap;
 
 public class CommandInvoker {
@@ -11,16 +13,26 @@ public class CommandInvoker {
         commandMap.put("help", HelpCommand.class);
         commandMap.put("save", SaveCommand.class);
         commandMap.put("info", InfoCommand.class);
+        commandMap.put("insert", InsertComand.class);
+        commandMap.put("exit", ExitCommand.class);
+        commandMap.put("filter_contains_name", FilterContainsNameCommand.class);
     }
 
-    public void invoke(String name, String... args) {
+    public void invoke(String name, String... args)
+        throws NoSuchObjectException {
+        Class<?> command = commandMap.get(name);
+        if (command == null) {
+            throw new NoSuchObjectException(
+                "No command with name \"" + name + "\" exists"
+            );
+        }
         try {
-            Method exec = commandMap
-                .get(name)
-                .getMethod("exec", String[].class);
+            Method exec = command.getMethod("exec", String[].class);
             exec.invoke(null, (Object) args);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            System.out.println(e.getCause().getMessage());
         } catch (Exception e) {
             e.printStackTrace();
         }

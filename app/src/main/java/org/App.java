@@ -5,10 +5,13 @@ package org;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.rmi.NoSuchObjectException;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
+import org.commands.CommandParser;
 import org.dataclasses.*;
 
 public class App {
@@ -66,9 +69,24 @@ public class App {
         //     movieOperator
         // );
         // collection.put(testMovie.getID(), testMovie);
+        CommandParser userInputParser = new CommandParser(System.in);
         CommandInvoker invoker = new CommandInvoker();
-        invoker.invoke("help");
-        invoker.invoke("info");
-        // invoker.invoke("save");
+        System.out.print("> ");
+        for (String[] command : userInputParser) {
+            if (command[0] == "") {
+                System.out.print("> ");
+                continue;
+            }
+            try {
+                invoker.invoke(
+                    command[0],
+                    Arrays.copyOfRange(command, 1, command.length)
+                );
+            } catch (NoSuchObjectException e) {
+                System.out.println(e.getMessage());
+            }
+            System.out.print("> ");
+        }
+        userInputParser.close();
     }
 }

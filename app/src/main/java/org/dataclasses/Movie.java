@@ -234,9 +234,6 @@ public class Movie implements Comparable<Movie> {
                     value = readObjectFromXML(eventReader, fieldType);
                 }
                 fieldSetter.invoke(instance, value);
-                System.out.println(
-                    "field " + fieldName + " set with value " + value
-                );
             } else if (event.isEndElement()) {
                 eventReader.nextEvent();
                 if (parsingDepth-- <= 0) {

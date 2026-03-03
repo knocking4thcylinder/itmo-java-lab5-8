@@ -37,6 +37,11 @@ public class SaveCommand implements ExecutableInterface {
                 eventWriter.add(eventFactory.createCharacters("\n"));
             }
             eventWriter.add(eventFactory.createEndDocument());
+            System.out.println(
+                "Successfully saved the collection to file \"" +
+                    App.getStorageFile() +
+                    "\""
+            );
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

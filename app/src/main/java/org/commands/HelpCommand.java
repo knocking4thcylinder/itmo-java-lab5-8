@@ -13,6 +13,7 @@ class HelpCommand implements ExecutableInterface {
             help - shows help for all of the commands
             info - shows information about the current state of the Collection
             save - saves the current state of the collection to a file with the name given to the app on startup
+            exit - exit program without saving
             """
         );
     }
