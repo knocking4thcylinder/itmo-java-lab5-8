@@ -15,6 +15,7 @@ public class CommandInvoker {
         commandMap.put("info", InfoCommand.class);
         commandMap.put("insert", InsertComand.class);
         commandMap.put("exit", ExitCommand.class);
+        commandMap.put("clear", ClearComand.class);
         commandMap.put("filter_contains_name", FilterContainsNameCommand.class);
     }
 
