@@ -19,7 +19,7 @@ import org.dataclasses.enums.MpaaRating;
 
 public class Movie implements Comparable<Movie> {
 
-    private static int minNotUsedId = 0;
+    private static int minNotUsedId = 100000;
     private int id;
     private String name;
     private Coordinates coordinates;

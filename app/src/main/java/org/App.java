@@ -17,13 +17,13 @@ import org.dataclasses.*;
 public class App {
 
     private static String fileName;
-    private static TreeMap<Integer, Movie> collection = new TreeMap<>();
+    private static TreeMap<String, Movie> collection = new TreeMap<>();
 
     public static String getStorageFile() {
         return App.fileName;
     }
 
-    public static TreeMap<Integer, Movie> getCollection() {
+    public static TreeMap<String, Movie> getCollection() {
         return collection;
     }
 
@@ -43,7 +43,7 @@ public class App {
         try (Scanner scanner = new Scanner(new File(fileName), "UTF-8")) {
             while (scanner.findWithinHorizon(pattern, 0) != null) {
                 Movie testmovie2 = Movie.fromXML(scanner.match().group(0));
-                collection.put(testmovie2.getId(), testmovie2);
+                collection.put("" + testmovie2.getId(), testmovie2);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
