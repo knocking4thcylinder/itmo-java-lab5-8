@@ -38,15 +38,32 @@ public class App {
         Pattern pattern = Pattern.compile(
             "<Movie.*?>.*?</Movie>",
             Pattern.DOTALL
-        );
+       );
 
-        try (Scanner scanner = new Scanner(new File(fileName), "UTF-8")) {
+        File inputFile = new File(fileName);
+        if (!inputFile.exists()) {
+            System.out.println("no file found on path " + fileName);
+            System.exit(0);
+        } else if (!inputFile.canRead()) {
+            System.out.println(
+                "cant read the file on path " +
+                    fileName +
+                    ", chech read permissions"
+            );
+            System.exit(0);
+        } else if (!inputFile.canWrite()) {
+            System.out.println(
+                "cant write the file on path " +
+                    fileName +
+                    ", chech write permissions"
+            );
+            System.exit(0);
+        }
+        try (Scanner scanner = new Scanner(inputFile, "UTF-8")) {
             while (scanner.findWithinHorizon(pattern, 0) != null) {
                 Movie testmovie2 = Movie.fromXML(scanner.match().group(0));
                 collection.put("" + testmovie2.getId(), testmovie2);
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
