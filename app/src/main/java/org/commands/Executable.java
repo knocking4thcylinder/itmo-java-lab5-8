@@ -1,6 +1,5 @@
 package org.commands;
 
-public class InsertComand implements ExecutableInterface {
-
+interface Executable {
     public static void exec(String... args) {}
 }

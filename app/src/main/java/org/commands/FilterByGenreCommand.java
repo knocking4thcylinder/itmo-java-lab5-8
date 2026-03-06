@@ -4,7 +4,7 @@ import org.App;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MovieGenre;
 
-public class FilterByGenreCommand implements ExecutableInterface {
+public class FilterByGenreCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 1) {

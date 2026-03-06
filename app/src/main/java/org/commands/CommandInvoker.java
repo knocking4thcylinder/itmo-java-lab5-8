@@ -13,7 +13,7 @@ public class CommandInvoker {
         commandMap.put("help", HelpCommand.class);
         commandMap.put("save", SaveCommand.class);
         commandMap.put("info", InfoCommand.class);
-        commandMap.put("insert", InsertComand.class);
+        commandMap.put("insert", InsertCommand.class);
         commandMap.put("exit", ExitCommand.class);
         commandMap.put("clear", ClearComand.class);
         commandMap.put("remove_key", RemoveKeyCommand.class);

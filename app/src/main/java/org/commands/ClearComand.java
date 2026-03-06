@@ -2,7 +2,7 @@ package org.commands;
 
 import org.App;
 
-public class ClearComand implements ExecutableInterface {
+public class ClearComand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 0) {

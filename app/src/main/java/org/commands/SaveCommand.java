@@ -11,7 +11,7 @@ import javax.xml.stream.XMLStreamException;
 import org.App;
 import org.dataclasses.Movie;
 
-public class SaveCommand implements ExecutableInterface {
+public class SaveCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 0) {

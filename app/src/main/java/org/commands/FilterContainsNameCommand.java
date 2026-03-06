@@ -3,7 +3,7 @@ package org.commands;
 import org.App;
 import org.dataclasses.Movie;
 
-public class FilterContainsNameCommand implements ExecutableInterface {
+public class FilterContainsNameCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 1) {

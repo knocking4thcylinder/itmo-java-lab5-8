@@ -4,7 +4,7 @@ import java.util.Collection;
 import org.App;
 import org.dataclasses.Movie;
 
-public class InfoCommand implements ExecutableInterface {
+public class InfoCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 0) {

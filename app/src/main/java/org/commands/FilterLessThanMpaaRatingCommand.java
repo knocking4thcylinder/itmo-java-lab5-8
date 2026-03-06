@@ -4,7 +4,7 @@ import org.App;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
-public class FilterLessThanMpaaRatingCommand implements ExecutableInterface {
+public class FilterLessThanMpaaRatingCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 1) {

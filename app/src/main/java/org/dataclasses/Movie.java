@@ -149,7 +149,6 @@ public class Movie implements Comparable<Movie> {
         return xmlStream.toString();
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static <T> T readObjectFromXML(
         XMLEventReader eventReader,
         Class<T> objectClass

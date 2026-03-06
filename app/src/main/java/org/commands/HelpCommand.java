@@ -1,6 +1,6 @@
 package org.commands;
 
-class HelpCommand implements ExecutableInterface {
+class HelpCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 0) {

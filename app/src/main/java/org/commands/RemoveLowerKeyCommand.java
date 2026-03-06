@@ -2,7 +2,7 @@ package org.commands;
 
 import org.App;
 
-public class RemoveLowerKeyCommand implements ExecutableInterface {
+public class RemoveLowerKeyCommand implements Executable {
 
     public static void exec(String... args) {
         if (args.length != 1) {

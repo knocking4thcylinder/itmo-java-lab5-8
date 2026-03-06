@@ -4,7 +4,6 @@
 package org;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -38,7 +37,7 @@ public class App {
         Pattern pattern = Pattern.compile(
             "<Movie.*?>.*?</Movie>",
             Pattern.DOTALL
-       );
+        );
 
         File inputFile = new File(fileName);
         if (!inputFile.exists()) {
@@ -88,6 +87,13 @@ public class App {
         // collection.put(testMovie.getID(), testMovie);
         CommandParser userInputParser = new CommandParser(System.in);
         CommandInvoker invoker = new CommandInvoker();
+        Movie movie;
+        try {
+            movie = userInputParser.parseObject(Movie.class);
+            System.out.println(movie);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         System.out.print("> ");
         for (String[] command : userInputParser) {
             if (command[0] == "") {
