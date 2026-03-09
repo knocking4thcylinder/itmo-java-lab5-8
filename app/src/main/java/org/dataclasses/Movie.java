@@ -6,7 +6,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -44,7 +47,7 @@ public class Movie implements Comparable<Movie> {
     ) {
         this.id = ++minNotUsedId;
         this.creationDate = LocalDateTime.now();
-        if (name == null || name.equals("")) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                 "Movie.name cannot be empty or null"
             );
@@ -120,8 +123,7 @@ public class Movie implements Comparable<Movie> {
         }
     }
 
-    //TODO
-    public String toXML() throws XMLStreamException {
+    public String toXML(String key) throws XMLStreamException {
         StringWriter xmlStream = new StringWriter();
         XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
         XMLEventWriter eventWriter = outputFactory.createXMLEventWriter(
@@ -132,11 +134,20 @@ public class Movie implements Comparable<Movie> {
         try {
             // eventWriter.add(eventFactory.createStartDocument("UTF-8", "1.0"));
             // eventWriter.add(eventFactory.createCharacters("\n"));
-            eventWriter.add(eventFactory.createStartElement("", "", "Movie"));
+            Attribute attribure = eventFactory.createAttribute("key", key);
+            eventWriter.add(
+                eventFactory.createStartElement(
+                    "",
+                    "",
+                    "Movie",
+                    List.of(attribure).iterator(),
+                    null
+                )
+            );
             writeObjectToXML(this, eventWriter, eventFactory, 1);
             eventWriter.add(eventFactory.createCharacters("\n"));
             eventWriter.add(eventFactory.createEndElement("", "", "Movie"));
-            eventWriter.add(eventFactory.createCharacters("\n"));
+            // eventWriter.add(eventFactory.createCharacters("\n"));
             // eventWriter.add(eventFactory.createEndDocument());
         } catch (IllegalAccessException e) {
             throw new XMLStreamException(
@@ -250,7 +261,8 @@ public class Movie implements Comparable<Movie> {
     }
 
     //TODO
-    public static Movie fromXML(String inputString) throws Exception {
+    public static Map.Entry<String, Movie> fromXML(String inputString)
+        throws Exception {
         XMLInputFactory inputFactory = XMLInputFactory.newFactory();
         inputFactory.setProperty(XMLInputFactory.IS_COALESCING, true);
         XMLEventReader eventReader = inputFactory.createXMLEventReader(
@@ -261,11 +273,14 @@ public class Movie implements Comparable<Movie> {
             if (eventReader.peek().isStartElement()) {
                 StartElement startElement = eventReader.peek().asStartElement();
                 if (startElement.getName().getLocalPart().equals("Movie")) {
+                    String key = startElement
+                        .getAttributeByName(new QName("key"))
+                        .getValue();
                     eventReader.nextEvent();
                     Movie movie = readObjectFromXML(eventReader, Movie.class);
                     Movie.minNotUsedId =
                         Math.max(movie.getId(), Movie.minNotUsedId) + 1;
-                    return movie;
+                    return Map.entry(key, movie);
                 }
             }
             eventReader.nextEvent();
@@ -317,7 +332,7 @@ public class Movie implements Comparable<Movie> {
     }
 
     public void setName(String name) {
-        if (name == null || name.equals("")) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                 "Movie.name cannot be empty or null"
             );

@@ -14,13 +14,16 @@ public class CommandInvoker {
         commandMap.put("save", SaveCommand.class);
         commandMap.put("info", InfoCommand.class);
         commandMap.put("insert", InsertCommand.class);
+        commandMap.put("update", UpdateCommand.class);
         commandMap.put("exit", ExitCommand.class);
         commandMap.put("clear", ClearComand.class);
         commandMap.put("remove_key", RemoveKeyCommand.class);
+        commandMap.put("replace_if_lower", ReplaceIfLowerCommand.class);
         commandMap.put("remove_lower_key", RemoveLowerKeyCommand.class);
         commandMap.put("remove_greater_key", RemoveGreaterKeyCommand.class);
         commandMap.put("filter_by_genre", FilterByGenreCommand.class);
         commandMap.put("filter_contains_name", FilterContainsNameCommand.class);
+        commandMap.put("execute_script", ExecuteScriptCommand.class);
         commandMap.put(
             "filter_less_than_mpaa_rating",
             FilterLessThanMpaaRatingCommand.class

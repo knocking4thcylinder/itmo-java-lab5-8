@@ -9,7 +9,6 @@ import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import org.App;
-import org.dataclasses.Movie;
 
 public class SaveCommand implements Executable {
 
@@ -32,8 +31,10 @@ public class SaveCommand implements Executable {
             XMLEventFactory eventFactory = XMLEventFactory.newFactory();
             eventWriter.add(eventFactory.createStartDocument());
             eventWriter.add(eventFactory.createCharacters("\n"));
-            for (Movie movie : App.getCollection().values()) {
-                outputStream.write(movie.toXML().getBytes());
+            for (var movie : App.getCollection().entrySet()) {
+                outputStream.write(
+                    movie.getValue().toXML(movie.getKey()).getBytes()
+                );
                 eventWriter.add(eventFactory.createCharacters("\n"));
             }
             eventWriter.add(eventFactory.createEndDocument());

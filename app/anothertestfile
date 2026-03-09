@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Movie>
+<Movie key="3245">
 	<id>0</id>
 	<name>Inception</name>
 	<coordinates>
@@ -22,4 +22,70 @@
 		</location>
 	</operator>
 </Movie>
-
+<Movie key="34632524">
+	<id>100007</id>
+	<name>sadfgewrgwrh</name>
+	<coordinates>
+		<x>23452345</x>
+		<y>2345</y>
+	</coordinates>
+	<creationDate>2026-03-07T00:09:28.899232</creationDate>
+	<oscarsCount>134</oscarsCount>
+	<genre>TRAGEDY</genre>
+	<mpaaRating>PG</mpaaRating>
+	<operator>
+		<name>23245dsfgs</name>
+		<weight>0.2345</weight>
+		<nationality>CHINA</nationality>
+		<location>
+			<x>23452345235</x>
+			<y>5.345324523454325E7</y>
+			<name>1234wewe</name>
+		</location>
+	</operator>
+</Movie>
+<Movie key="asfdsaf">
+	<id>100003</id>
+	<name>saf</name>
+	<coordinates>
+		<x>254</x>
+		<y>2345324</y>
+	</coordinates>
+	<creationDate>2026-03-06T22:52:20.713415</creationDate>
+	<oscarsCount>1234</oscarsCount>
+	<genre>ACTION</genre>
+	<mpaaRating>G</mpaaRating>
+	<operator>
+		<name>asdf</name>
+		<weight>2134.0</weight>
+		<nationality>CHINA</nationality>
+		<location>
+			<x>1243</x>
+			<y>41234.4</y>
+			<name>1234asdf</name>
+		</location>
+	</operator>
+</Movie>
+<Movie key="sdfgsdfg">
+	<id>100005</id>
+	<name>sdfwrt</name>
+	<coordinates>
+		<x>234</x>
+		<y>63456</y>
+	</coordinates>
+	<creationDate>2026-03-06T23:41:58.811715</creationDate>
+	<oscarsCount>3456</oscarsCount>
+	<genre>WESTERN</genre>
+	<mpaaRating>PG</mpaaRating>
+	<operator>
+		<name>sdfgjjsdg</name>
+		<weight>3.456734734563456E7</weight>
+		<passportID>sdfgsdfgsdgdsfg</passportID>
+		<nationality>CHINA</nationality>
+		<location>
+			<x>564</x>
+			<y>345.0</y>
+			<name>eggdf</name>
+		</location>
+	</operator>
+</Movie>

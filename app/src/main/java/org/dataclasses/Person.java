@@ -20,7 +20,7 @@ public class Person {
         Country nationality,
         Location location
     ) {
-        if (name == null || name.equals("")) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                 "Person.name cannot be empty or null"
             );
@@ -69,7 +69,7 @@ public class Person {
     }
 
     public void setName(String name) {
-        if (name == null || name.equals("")) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                 "Person.name cannot be empty or null"
             );

@@ -11,7 +11,7 @@ public class Location {
     public Location(long x, double y, String name) {
         this.x = x;
         this.y = y;
-        if (name != null && name.equals("")) {
+        if (name != null && name.isBlank()) {
             throw new IllegalArgumentException("Location.name cannot be empty");
         }
         this.name = name;

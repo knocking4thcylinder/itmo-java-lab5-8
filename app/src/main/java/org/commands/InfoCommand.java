@@ -1,8 +1,6 @@
 package org.commands;
 
-import java.util.Collection;
 import org.App;
-import org.dataclasses.Movie;
 
 public class InfoCommand implements Executable {
 
@@ -12,9 +10,9 @@ public class InfoCommand implements Executable {
                 "command \"info\" does not accept any arguments"
             );
         }
-        Collection<Movie> collection = App.getCollection().values();
-        for (Movie movie : collection) {
-            System.out.println(movie.toString());
+        var collection = App.getCollection().entrySet();
+        for (var movie : collection) {
+            System.out.println(movie.getKey() + " -> " + movie.getValue());
         }
     }
 }

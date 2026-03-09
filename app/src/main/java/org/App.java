@@ -4,29 +4,42 @@
 package org;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
-import org.commands.CommandParser;
+import org.commands.InputParser;
 import org.dataclasses.*;
 
 public class App {
 
     private static String fileName;
+    private static InputParser inputParser;
     private static TreeMap<String, Movie> collection = new TreeMap<>();
 
     public static String getStorageFile() {
         return App.fileName;
     }
 
+    public static InputParser getInputParser() {
+        return App.inputParser;
+    }
+
     public static TreeMap<String, Movie> getCollection() {
         return collection;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args)
+        throws FileNotFoundException, AccessDeniedException {
         if (args.length != 1) {
             System.out.println(
                 "Usage: java -jar /path/to/.jar /path/to/inputfile.xml"
@@ -39,30 +52,37 @@ public class App {
             Pattern.DOTALL
         );
 
-        File inputFile = new File(fileName);
-        if (!inputFile.exists()) {
-            System.out.println("no file found on path " + fileName);
-            System.exit(0);
-        } else if (!inputFile.canRead()) {
-            System.out.println(
-                "cant read the file on path " +
-                    fileName +
-                    ", chech read permissions"
-            );
-            System.exit(0);
-        } else if (!inputFile.canWrite()) {
-            System.out.println(
+        Path inputPath = Paths.get(fileName);
+
+        if (!Files.isWritable(inputPath)) {
+            throw new AccessDeniedException(
                 "cant write the file on path " +
                     fileName +
                     ", chech write permissions"
             );
-            System.exit(0);
         }
-        try (Scanner scanner = new Scanner(inputFile, "UTF-8")) {
+        try (
+            Scanner scanner = new Scanner(
+                Files.newInputStream(inputPath),
+                "UTF-8"
+            )
+        ) {
             while (scanner.findWithinHorizon(pattern, 0) != null) {
-                Movie testmovie2 = Movie.fromXML(scanner.match().group(0));
-                collection.put("" + testmovie2.getId(), testmovie2);
+                Map.Entry<String, Movie> movie = Movie.fromXML(
+                    scanner.match().group(0)
+                );
+                collection.put(movie.getKey(), movie.getValue());
             }
+        } catch (FileNotFoundException e) {
+            throw new FileNotFoundException(
+                "no file found on path " + fileName
+            );
+        } catch (AccessDeniedException e) {
+            throw new AccessDeniedException(
+                "cant read the file on path " +
+                    fileName +
+                    ", chech read permissions"
+            );
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -85,17 +105,10 @@ public class App {
         //     movieOperator
         // );
         // collection.put(testMovie.getID(), testMovie);
-        CommandParser userInputParser = new CommandParser(System.in);
+        App.inputParser = new InputParser(System.in);
         CommandInvoker invoker = new CommandInvoker();
-        Movie movie;
-        try {
-            movie = userInputParser.parseObject(Movie.class);
-            System.out.println(movie);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         System.out.print("> ");
-        for (String[] command : userInputParser) {
+        for (String[] command : App.inputParser) {
             if (command[0] == "") {
                 System.out.print("> ");
                 continue;
@@ -110,6 +123,6 @@ public class App {
             }
             System.out.print("> ");
         }
-        userInputParser.close();
+        App.inputParser.close();
     }
 }
