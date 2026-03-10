@@ -8,7 +8,7 @@ public class ReplaceIfLowerCommand implements Executable {
     public static void exec(String... args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException(
-                "command \"repalce_if_lower\" accepts exactly one argument"
+                "command \"replace_if_lower\" accepts exactly one argument"
             );
         }
 
