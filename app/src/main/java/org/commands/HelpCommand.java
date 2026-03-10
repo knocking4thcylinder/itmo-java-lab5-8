@@ -10,10 +10,22 @@ class HelpCommand implements Executable {
         }
         System.out.println(
             """
-            help - shows help for all of the commands
-            info - shows information about the current state of the Collection
-            save - saves the current state of the collection to a file with the name given to the app on startup
-            exit - exit program without saving
+            help : вывести справку по доступным командам
+            info : вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)
+            show : вывести в стандартный поток вывода все элементы коллекции в строковом представлении
+            insert null {element} : добавить новый элемент с заданным ключом
+            update id {element} : обновить значение элемента коллекции, id которого равен заданному
+            remove_key null : удалить элемент из коллекции по его ключу
+            clear : очистить коллекцию
+            save : сохранить коллекцию в файл
+            execute_script file_name : считать и исполнить скрипт из указанного файла
+            exit : завершить программу (без сохранения в файл)
+            replace_if_lower null {element} : заменить значение по ключу, если новое значение меньше старого
+            remove_greater_key null : удалить из коллекции все элементы, ключ которых превышает заданный
+            remove_lower_key null : удалить из коллекции все элементы, ключ которых меньше, чем заданный
+            filter_by_genre genre : вывести элементы, значение поля genre которых равно заданному
+            filter_contains_name name : вывести элементы, значение поля name которых содержит заданную подстроку
+            filter_less_than_mpaa_rating mpaaRating : вывести элементы, значение поля mpaaRating которых меньше заданного
             """
         );
     }

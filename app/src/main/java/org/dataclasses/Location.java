@@ -26,7 +26,7 @@ public class Location {
     }
 
     public void setName(String name) {
-        if (name != null && name.equals("")) {
+        if (name != null && name.isBlank()) {
             throw new IllegalArgumentException("Location.name cannot be empty");
         }
         this.name = name;
