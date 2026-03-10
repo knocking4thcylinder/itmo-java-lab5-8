@@ -58,7 +58,7 @@ public class App {
             throw new AccessDeniedException(
                 "cant write the file on path " +
                     fileName +
-                    ", chech write permissions"
+                    ", check write permissions"
             );
         }
         try (
@@ -81,10 +81,11 @@ public class App {
             throw new AccessDeniedException(
                 "cant read the file on path " +
                     fileName +
-                    ", chech read permissions"
+                    ", check read permissions"
             );
         } catch (Exception e) {
             e.printStackTrace();
+            inputParser.setInputStream(System.in);
         }
         // Location operatorLocation = new Location(515074L, -0.1278, "London");
         // Person movieOperator = new Person(

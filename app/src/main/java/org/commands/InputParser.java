@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.InputMismatchException;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -18,19 +19,23 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         this.inputScanner = new Scanner(inputStream);
     }
 
+    public void setInputStream(InputStream inputStream) {
+        this.inputScanner = new Scanner(inputStream);
+    }
+
     public String[] parseCommand() {
         return inputScanner.nextLine().trim().split(" ");
     }
 
     public <T> T parseObject(T instance) throws Exception {
-        Stream<Method> setterArray = Stream.of(
-            instance.getClass().getMethods()
-        ).filter(
-            e ->
-                e.getName().startsWith("set") &&
-                e.getParameterCount() == 1 &&
-                !Modifier.isStatic(e.getModifiers())
-        );
+        Stream<Method> setterArray = Stream.of(instance.getClass().getMethods())
+            .filter(
+                e ->
+                    e.getName().startsWith("set") &&
+                    e.getParameterCount() == 1 &&
+                    !Modifier.isStatic(e.getModifiers())
+            )
+            .sorted(Comparator.comparing(Method::getName));
         for (Object setter : setterArray.toArray()) {
             Method tmpSetter = (Method) setter;
             String tmpSetterName = tmpSetter.getName();
@@ -188,6 +193,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                         e.getParameterCount() == 1 &&
                         !Modifier.isStatic(e.getModifiers())
                 )
+                .sorted(Comparator.comparing(Method::getName))
                 .toArray();
 
             for (Object setter : setterArray) {

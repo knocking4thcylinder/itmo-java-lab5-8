@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
+import org.App;
 
 public class ExecuteScriptCommand implements Executable {
 
@@ -27,41 +29,53 @@ public class ExecuteScriptCommand implements Executable {
             throw new AccessDeniedException(
                 "cant read the file on path " +
                     fileName +
-                    ", chech read permissions"
+                    ", check read permissions"
             );
         } else if (!inputFile.canWrite()) {
             throw new AccessDeniedException(
                 "cant write the file on path " +
                     fileName +
-                    ", chech write permissions"
+                    ", check write permissions"
             );
         }
 
         CommandInvoker commandInvoker = new CommandInvoker();
 
-        try (
-            InputParser fileParser = new InputParser(
+        InputParser inputParser = App.getInputParser();
+
+        try {
+            inputParser.setInputStream(
                 Files.newInputStream(Paths.get(fileName))
-            )
-        ) {
-            for (var command : fileParser) {
-                commandInvoker.invoke(
-                    command[0],
-                    Arrays.copyOfRange(command, 1, command.length)
-                );
-            }
+            );
         } catch (FileNotFoundException e) {
+            inputParser.setInputStream(System.in);
             throw new FileNotFoundException(
                 "no file found on path " + fileName
             );
         } catch (AccessDeniedException e) {
+            inputParser.setInputStream(System.in);
             throw new AccessDeniedException(
                 "cant read the file on path " +
                     fileName +
                     ", chech read permissions"
             );
         } catch (IOException e) {
+            inputParser.setInputStream(System.in);
             e.printStackTrace();
+        }
+
+        try {
+            for (var command : inputParser) {
+                commandInvoker.invoke(
+                    command[0],
+                    Arrays.copyOfRange(command, 1, command.length)
+                );
+            }
+        } catch (NoSuchObjectException e) {
+            inputParser.setInputStream(System.in);
+            e.printStackTrace();
+        } finally {
+            inputParser.setInputStream(System.in);
         }
     }
 }

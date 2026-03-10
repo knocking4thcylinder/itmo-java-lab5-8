@@ -44,6 +44,29 @@
 		</location>
 	</operator>
 </Movie>
+<Movie key="asdfwrwsdfvc">
+	<id>100013</id>
+	<name>fsdghtewg</name>
+	<coordinates>
+		<x>124234</x>
+		<y>324531234</y>
+	</coordinates>
+	<creationDate>2026-03-10T10:36:52.272271</creationDate>
+	<oscarsCount>345345</oscarsCount>
+	<genre>ACTION</genre>
+	<mpaaRating>R</mpaaRating>
+	<operator>
+		<name>wdfsgdfghdfh</name>
+		<weight>456456.234</weight>
+		<passportID>dsfgtdbvcsdrg356435</passportID>
+		<nationality>ITALY</nationality>
+		<location>
+			<x>3453745</x>
+			<y>2.34534564536E11</y>
+			<name>sdfgetrgsdfg</name>
+		</location>
+	</operator>
+</Movie>
 <Movie key="asfdsaf">
 	<id>100003</id>
 	<name>saf</name>
