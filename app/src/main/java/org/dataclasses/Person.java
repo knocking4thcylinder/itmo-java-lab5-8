@@ -128,4 +128,21 @@ public class Person {
             '}'
         );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return Double.compare(person.weight, weight) == 0 &&
+            Objects.equals(name, person.name) &&
+            Objects.equals(passportID, person.passportID) &&
+            nationality == person.nationality &&
+            Objects.equals(location, person.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, weight, passportID, nationality, location);
+    }
 }

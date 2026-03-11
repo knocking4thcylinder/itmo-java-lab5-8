@@ -408,4 +408,24 @@ public class Movie implements Comparable<Movie> {
             '}'
         );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Movie movie = (Movie) o;
+        return id == movie.id &&
+            oscarsCount == movie.oscarsCount &&
+            Objects.equals(name, movie.name) &&
+            Objects.equals(coordinates, movie.coordinates) &&
+            Objects.equals(creationDate, movie.creationDate) &&
+            genre == movie.genre &&
+            mpaaRating == movie.mpaaRating &&
+            Objects.equals(operator, movie.operator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, coordinates, creationDate, oscarsCount, genre, mpaaRating, operator);
+    }
 }
