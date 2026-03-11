@@ -17,19 +17,37 @@ import org.commands.CommandInvoker;
 import org.commands.InputParser;
 import org.dataclasses.*;
 
+/**
+ * Главный класс приложения для управления коллекцией фильмов.
+ * Загружает коллекцию из XML-файла и обрабатывает пользовательские команды.
+ */
 public class App {
 
     private static String fileName;
     private static InputParser inputParser;
 
+    /**
+     * Возвращает путь к файлу хранения коллекции.
+     * @return путь к файлу
+     */
     public static String getStorageFile() {
         return App.fileName;
     }
 
+    /**
+     * Возвращает парсер ввода.
+     * @return экземпляр InputParser
+     */
     public static InputParser getInputParser() {
         return App.inputParser;
     }
 
+    /**
+     * Главный метод приложения.
+     * @param args аргументы командной строки (ожидается путь к XML-файлу)
+     * @throws FileNotFoundException если файл не найден
+     * @throws AccessDeniedException если нет доступа к файлу
+     */
     public static void main(String[] args)
         throws FileNotFoundException, AccessDeniedException {
         if (args.length != 1) {

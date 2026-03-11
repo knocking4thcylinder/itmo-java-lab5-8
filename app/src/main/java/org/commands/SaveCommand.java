@@ -11,8 +11,17 @@ import javax.xml.stream.XMLStreamException;
 import org.App;
 import org.CollectionManager;
 
+/**
+ * Команда для сохранения коллекции в файл.
+ */
+
 public class SaveCommand implements Executable {
 
+    /**
+     * Сохраняет коллекцию в файл.
+     * @param args аргументы команды
+     * @return результат выполнения
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 0) {

@@ -22,6 +22,10 @@ import javax.xml.stream.events.XMLEvent;
 import org.dataclasses.enums.MovieGenre;
 import org.dataclasses.enums.MpaaRating;
 
+/**
+ * Класс для хранения данных о фильме.
+ */
+
 public class Movie implements Comparable<Movie> {
 
     private static int minNotUsedId = 100000;
@@ -34,11 +38,30 @@ public class Movie implements Comparable<Movie> {
     private MpaaRating mpaaRating;
     private Person operator;
 
+    /**
+     * Конструктор по умолчанию.
+     * Создает фильм с автогенерированными id и датой создания.
+     */
     public Movie() {
         this.id = ++minNotUsedId;
         this.creationDate = LocalDateTime.now();
     }
 
+    /**
+     * Конструктор с параметрами.
+     * Создает фильм с указанными параметрами, id и дата создания генерируются автоматически.
+     * @param name название фильма (не может быть пустым или null)
+     * @param coordinates координаты (не могут быть null)
+     * @param oscarsCount количество оскаров (должно быть больше 0)
+     * @param genre жанр фильма (не может быть null)
+     * @param mpaaRating рейтинг MPAA (не может быть null)
+     * @param operator оператор фильма (может быть null)
+     * @throws IllegalArgumentException если name пустой или null
+     * @throws IllegalArgumentException если coordinates равно null
+     * @throws IllegalArgumentException если oscarsCount меньше или равно 0
+     * @throws IllegalArgumentException если genre равно null
+     * @throws IllegalArgumentException если mpaaRating равно null
+     */
     public Movie(
         String name,
         Coordinates coordinates,
@@ -76,6 +99,11 @@ public class Movie implements Comparable<Movie> {
         this.operator = operator;
     }
 
+    /**
+     * Устанавливает минимальный неиспользованный id.
+     * Используется при загрузке коллекции из файла для генерации уникальных id.
+     * @param id минимальный неиспользованный id
+     */
     public static void setMinNotUsedId(int id) {
         if (id > minNotUsedId) {
             minNotUsedId = id;
@@ -125,6 +153,12 @@ public class Movie implements Comparable<Movie> {
         }
     }
 
+    /**
+     * Сериализует фильм в XML формат.
+     * @param key ключ, который будет ассоциирован с фильмом в XML
+     * @return строковое представление фильма в XML формате
+     * @throws XMLStreamException при ошибке сериализации в XML
+     */
     public String toXML(String key) throws XMLStreamException {
         StringWriter xmlStream = new StringWriter();
         XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
@@ -262,6 +296,13 @@ public class Movie implements Comparable<Movie> {
         // );
     }
 
+    /**
+     * Десериализует фильм из XML формата.
+     * @param inputString строковое представление фильма в XML формате
+     * @return пара (ключ, фильм), где ключ - атрибут key из XML, а фильм - десериализованный объект
+     * @throws XMLStreamException при ошибке парсинга XML
+     * @throws Exception при ошибке создания объекта из XML
+     */
     //TODO
     public static Map.Entry<String, Movie> fromXML(String inputString)
         throws Exception {
@@ -290,6 +331,12 @@ public class Movie implements Comparable<Movie> {
         throw new XMLStreamException("Could not find <Movie> tag in the XML.");
     }
 
+    /**
+     * Сравнивает фильмы по названию, количеству оскаров и id.
+     * Сначала сравнивается название, затем количество оскаров, затем id.
+     * @param o фильм для сравнения
+     * @return отрицательное число, если этот фильм меньше, положительное если больше, 0 если равны
+     */
     @Override
     public int compareTo(Movie o) {
         if (o == null) {
@@ -301,38 +348,75 @@ public class Movie implements Comparable<Movie> {
             .compare(this, o);
     }
 
+    /**
+     * Возвращает дату создания фильма.
+     * @return дата создания фильма
+     */
     public java.time.LocalDateTime getCreationDate() {
         return this.creationDate;
     }
 
+    /**
+     * Возвращает уникальный идентификатор фильма.
+     * @return id фильма
+     */
     public int getId() {
         return this.id;
     }
 
+    /**
+     * Возвращает название фильма.
+     * @return название фильма
+     */
     public String getName() {
         return this.name;
     }
 
+    /**
+     * Возвращает координаты фильма.
+     * @return координаты фильма
+     */
     public Coordinates getCoordinates() {
         return this.coordinates;
     }
 
+    /**
+     * Возвращает количество оскаров у фильма.
+     * @return количество оскаров
+     */
     public int getOscarsCount() {
         return this.oscarsCount;
     }
 
+    /**
+     * Возвращает жанр фильма.
+     * @return жанр фильма
+     */
     public MovieGenre getGenre() {
         return this.genre;
     }
 
+    /**
+     * Возвращает рейтинг MPAA фильма.
+     * @return рейтинг MPAA
+     */
     public MpaaRating getMpaaRating() {
         return this.mpaaRating;
     }
 
+    /**
+     * Возвращает оператора фильма.
+     * @return оператор фильма (может быть null)
+     */
     public Person getOperator() {
         return this.operator;
     }
 
+    /**
+     * Устанавливает название фильма.
+     * @param name новое название фильма (не может быть пустым или null)
+     * @throws IllegalArgumentException если name пустой или null
+     */
     public void setName(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
@@ -342,6 +426,11 @@ public class Movie implements Comparable<Movie> {
         this.name = name;
     }
 
+    /**
+     * Устанавливает координаты фильма.
+     * @param coordinates новые координаты фильма (не могут быть null)
+     * @throws IllegalArgumentException если coordinates равно null
+     */
     public void setCoordinates(Coordinates coordinates) {
         this.coordinates = Objects.requireNonNull(
             coordinates,
@@ -349,6 +438,11 @@ public class Movie implements Comparable<Movie> {
         );
     }
 
+    /**
+     * Устанавливает количество оскаров фильма.
+     * @param oscarsCount новое количество оскаров (должно быть больше 0)
+     * @throws IllegalArgumentException если oscarsCount меньше или равно 0
+     */
     public void setOscarsCount(int oscarsCount) {
         if (oscarsCount <= 0) {
             throw new IllegalArgumentException(
@@ -358,6 +452,11 @@ public class Movie implements Comparable<Movie> {
         this.oscarsCount = oscarsCount;
     }
 
+    /**
+     * Устанавливает жанр фильма.
+     * @param genre новый жанр фильма (не может быть null)
+     * @throws IllegalArgumentException если genre равно null
+     */
     public void setGenre(MovieGenre genre) {
         this.genre = Objects.requireNonNull(
             genre,
@@ -365,6 +464,11 @@ public class Movie implements Comparable<Movie> {
         );
     }
 
+    /**
+     * Устанавливает рейтинг MPAA фильма.
+     * @param mpaaRating новый рейтинг MPAA (не может быть null)
+     * @throws IllegalArgumentException если mpaaRating равно null
+     */
     public void setMpaaRating(MpaaRating mpaaRating) {
         this.mpaaRating = Objects.requireNonNull(
             mpaaRating,
@@ -380,10 +484,18 @@ public class Movie implements Comparable<Movie> {
         this.id = id;
     }
 
+    /**
+     * Устанавливает оператора фильма.
+     * @param operator новый оператор фильма (может быть null)
+     */
     public void setOperator(Person operator) {
         this.operator = operator;
     }
 
+    /**
+     * Возвращает строковое представление фильма.
+     * @return строковое представление фильма со всеми полями
+     */
     @Override
     public String toString() {
         return (
@@ -409,6 +521,13 @@ public class Movie implements Comparable<Movie> {
         );
     }
 
+    /**
+     * Проверяет равенство фильмов.
+     * Фильмы считаются равными, если у них одинаковые id, название, координаты,
+     * дата создания, количество оскаров, жанр, рейтинг MPAA и оператор.
+     * @param o объект для сравнения
+     * @return true если фильмы равны, false в противном случае
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -424,6 +543,11 @@ public class Movie implements Comparable<Movie> {
             Objects.equals(operator, movie.operator);
     }
 
+    /**
+     * Возвращает хэш-код фильма.
+     * Хэш-код вычисляется на основе всех полей фильма.
+     * @return хэш-код фильма
+     */
     @Override
     public int hashCode() {
         return Objects.hash(id, name, coordinates, creationDate, oscarsCount, genre, mpaaRating, operator);

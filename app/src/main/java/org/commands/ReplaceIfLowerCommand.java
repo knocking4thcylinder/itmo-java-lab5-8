@@ -4,8 +4,18 @@ import org.App;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
+/**
+ * Команда для замены значения по ключу, если новое меньше старого.
+ */
+
 public class ReplaceIfLowerCommand implements Executable {
 
+    /**
+     * Заменяет фильм если новое значение меньше старого.
+     * @param args аргументы команды, где args[0] - ключ
+     * @return результат выполнения
+     * @throws Exception при ошибке ввода
+     */
     @Override
     public String exec(String... args) throws Exception {
         if (args.length != 1) {

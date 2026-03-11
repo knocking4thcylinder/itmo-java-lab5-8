@@ -11,22 +11,46 @@ import java.util.Iterator;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
+/**
+ * Класс для парсинга пользовательского ввода.
+ * Обеспечивает ввод команд и данных фильмов из потока ввода.
+ */
+
 public class InputParser implements AutoCloseable, Iterable<String[]> {
 
     private Scanner inputScanner;
 
+    /**
+     * Конструктор с потоком ввода.
+     * @param inputStream поток ввода (например, System.in или FileInputStream)
+     */
     public InputParser(InputStream inputStream) {
         this.inputScanner = new Scanner(inputStream);
     }
 
+    /**
+     * Устанавливает новый поток ввода.
+     * @param inputStream новый поток ввода
+     */
     public void setInputStream(InputStream inputStream) {
         this.inputScanner = new Scanner(inputStream);
     }
 
+    /**
+     * Парсит команду из входного потока.
+     * @return массив строк - команда и её аргументы
+     */
     public String[] parseCommand() {
         return inputScanner.nextLine().trim().split(" ");
     }
 
+    /**
+     * Парсит объект, заполняя его поля через пользовательский ввод.
+     * @param instance экземпляр объекта для заполнения
+     * @param <T> тип объекта
+     * @return заполненный объект
+     * @throws Exception при ошибке парсинга
+     */
     public <T> T parseObject(T instance) throws Exception {
         Stream<Method> setterArray = Stream.of(instance.getClass().getMethods())
             .filter(
@@ -46,6 +70,13 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         return instance;
     }
 
+    /**
+     * Парсит отдельное поле объекта.
+     * @param instance объект, которому принадлежит поле
+     * @param setterName имя сеттера для поля
+     * @param fieldType тип поля
+     * @throws Exception при ошибке парсинга
+     */
     private void parseField(
         Object instance,
         String setterName,
@@ -208,6 +239,10 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         } while (flag);
     }
 
+    /**
+     * Возвращает итератор для перебора команд из входного потока.
+     * @return итератор массивов строк (команд)
+     */
     public Iterator<String[]> iterator() {
         return new Iterator<String[]>() {
             public boolean hasNext() {
@@ -220,6 +255,9 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         };
     }
 
+    /**
+     * Закрывает сканер ввода.
+     */
     public void close() {
         inputScanner.close();
     }

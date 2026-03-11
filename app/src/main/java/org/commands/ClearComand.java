@@ -2,8 +2,17 @@ package org.commands;
 
 import org.CollectionManager;
 
+/**
+ * Команда для очистки коллекции.
+ */
+
 public class ClearComand implements Executable {
 
+    /**
+     * Очищает коллекцию.
+     * @param args аргументы команды
+     * @return результат выполнения
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 0) {

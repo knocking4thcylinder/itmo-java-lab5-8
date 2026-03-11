@@ -4,8 +4,16 @@ import java.time.LocalDateTime;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
+/**
+ * Команда вывода информации о коллекции.
+ */
 public class InfoCommand implements Executable {
 
+    /**
+     * Выводит информацию о коллекции.
+     * @param args аргументы команды
+     * @return информация о коллекции
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 0) {

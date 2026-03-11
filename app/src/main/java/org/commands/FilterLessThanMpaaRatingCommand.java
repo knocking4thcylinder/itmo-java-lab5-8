@@ -4,8 +4,17 @@ import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
+/**
+ * Команда для вывода элементов с рейтингом меньше заданного.
+ */
+
 public class FilterLessThanMpaaRatingCommand implements Executable {
 
+    /**
+     * Фильтрует фильмы по рейтингу (меньше заданного).
+     * @param args аргументы команды, где args[0] - рейтинг
+     * @return отфильтрованные фильмы
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 1) {

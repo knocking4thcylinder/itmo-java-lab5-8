@@ -4,17 +4,28 @@ import java.time.LocalDateTime;
 import java.util.TreeMap;
 import org.dataclasses.Movie;
 
+/**
+ * Менеджер коллекции фильмов.
+ * Реализует паттерн Singleton для управления коллекцией TreeMap.
+ */
 public class CollectionManager {
 
     private static CollectionManager instance;
     private TreeMap<String, Movie> collection;
     private LocalDateTime initializationDate;
 
+    /**
+     * Приватный конструктор для реализации Singleton.
+     */
     private CollectionManager() {
         this.collection = new TreeMap<>();
         this.initializationDate = LocalDateTime.now();
     }
 
+    /**
+     * Возвращает единственный экземпляр CollectionManager.
+     * @return экземпляр менеджера коллекции
+     */
     public static CollectionManager getInstance() {
         if (instance == null) {
             instance = new CollectionManager();
@@ -22,46 +33,94 @@ public class CollectionManager {
         return instance;
     }
 
+    /**
+     * Устанавливает экземпляр менеджера (для тестирования).
+     * @param manager экземпляр CollectionManager
+     */
     public static void setInstance(CollectionManager manager) {
         instance = manager;
     }
 
+    /**
+     * Возвращает коллекцию фильмов.
+     * @return TreeMap с фильмами
+     */
     public TreeMap<String, Movie> getCollection() {
         return collection;
     }
 
+    /**
+     * Устанавливает коллекцию фильмов.
+     * @param collection коллекция для установки
+     */
     public void setCollection(TreeMap<String, Movie> collection) {
         this.collection = collection;
     }
 
+    /**
+     * Возвращает дату инициализации коллекции.
+     * @return LocalDateTime инициализации
+     */
     public LocalDateTime getInitializationDate() {
         return initializationDate;
     }
 
+    /**
+     * Возвращает количество элементов в коллекции.
+     * @return размер коллекции
+     */
     public int size() {
         return collection.size();
     }
 
+    /**
+     * Проверяет, пуста ли коллекция.
+     * @return true, если коллекция пуста
+     */
     public boolean isEmpty() {
         return collection.isEmpty();
     }
 
+    /**
+     * Проверяет, содержится ли ключ в коллекции.
+     * @param key ключ для проверки
+     * @return true, если ключ содержится
+     */
     public boolean containsKey(String key) {
         return collection.containsKey(key);
     }
 
+    /**
+     * Возвращает фильм по ключу.
+     * @param key ключ фильма
+     * @return фильм или null, если не найден
+     */
     public Movie get(String key) {
         return collection.get(key);
     }
 
+    /**
+     * Добавляет фильм в коллекцию.
+     * @param key ключ фильма
+     * @param movie фильм для добавления
+     * @return предыдущее значение, связанное с ключом
+     */
     public Movie put(String key, Movie movie) {
         return collection.put(key, movie);
     }
 
+    /**
+     * Удаляет фильм из коллекции по ключу.
+     * @param key ключ фильма
+     * @return удаленный фильм или null
+     */
     public Movie remove(String key) {
         return collection.remove(key);
     }
 
+    /**
+     * Очищает коллекцию.
+     */
     public void clear() {
         collection.clear();
     }

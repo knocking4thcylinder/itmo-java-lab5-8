@@ -1,7 +1,15 @@
 package org.commands;
 
+/**
+ * Команда вывода справки по доступным командам.
+ */
 class HelpCommand implements Executable {
 
+    /**
+     * Выводит справку по доступным командам.
+     * @param args аргументы команды
+     * @return строка со справкой
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 0) {

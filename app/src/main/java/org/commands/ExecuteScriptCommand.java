@@ -9,11 +9,22 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import org.App;
 
+/**
+ * Команда для выполнения скрипта из файла.
+ */
+
 public class ExecuteScriptCommand implements Executable {
 
     private static java.util.Set<String> executingScripts =
         java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
+    /**
+     * Выполняет скрипт из файла.
+     * @param args аргументы команды, где args[0] - имя файла
+     * @return результаты выполнения команд скрипта
+     * @throws FileNotFoundException при отсутствии файла
+     * @throws AccessDeniedException при отсутствии прав доступа
+     */
     @Override
     public String exec(String... args)
         throws FileNotFoundException, AccessDeniedException {

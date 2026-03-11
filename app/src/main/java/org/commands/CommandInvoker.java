@@ -3,10 +3,16 @@ package org.commands;
 import java.rmi.NoSuchObjectException;
 import java.util.HashMap;
 
+/**
+ * Класс для управления и выполнения команд.
+ */
 public class CommandInvoker {
 
     HashMap<String, Executable> commandMap = new HashMap<>();
 
+    /**
+     * Конструктор, регистрирующий все доступные команды.
+     */
     public CommandInvoker() {
         commandMap.put("help", new HelpCommand());
         commandMap.put("save", new SaveCommand());
@@ -29,6 +35,13 @@ public class CommandInvoker {
         );
     }
 
+    /**
+     * Выполняет команду по имени.
+     * @param name имя команды
+     * @param args аргументы команды
+     * @return результат выполнения команды
+     * @throws Exception если команда не найдена или произошла ошибка
+     */
     public String invoke(String name, String... args) throws Exception {
         Executable command = commandMap.get(name);
         if (command == null) {

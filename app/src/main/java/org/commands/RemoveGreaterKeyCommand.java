@@ -3,8 +3,17 @@ package org.commands;
 import java.util.Iterator;
 import org.CollectionManager;
 
+/**
+ * Команда для удаления элементов с ключом больше заданного.
+ */
+
 public class RemoveGreaterKeyCommand implements Executable {
 
+    /**
+     * Удаляет фильмы с ключом больше заданного.
+     * @param args аргументы команды, где args[0] - ключ
+     * @return результат выполнения
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 1) {

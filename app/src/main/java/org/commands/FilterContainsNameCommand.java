@@ -3,8 +3,17 @@ package org.commands;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
+/**
+ * Команда для вывода элементов, имя которых содержит подстроку.
+ */
+
 public class FilterContainsNameCommand implements Executable {
 
+    /**
+     * Фильтрует фильмы по имени (содержит подстроку).
+     * @param args аргументы команды, где args[0] - подстрока
+     * @return отфильтрованные фильмы
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 1) {

@@ -2,8 +2,17 @@ package org.commands;
 
 import org.CollectionManager;
 
+/**
+ * Команда для удаления элемента по ключу.
+ */
+
 public class RemoveKeyCommand implements Executable {
 
+    /**
+     * Удаляет фильм по ключу.
+     * @param args аргументы команды, где args[0] - ключ
+     * @return результат выполнения
+     */
     @Override
     public String exec(String... args) {
         if (args.length != 1) {
