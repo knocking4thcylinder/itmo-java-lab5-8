@@ -1,6 +1,7 @@
 package org.commands;
 
 import org.App;
+import org.CollectionManager;
 import org.dataclasses.Movie;
 
 public class InsertCommand implements Executable {
@@ -13,7 +14,7 @@ public class InsertCommand implements Executable {
             );
         }
         String key = args[0];
-        var collection = App.getCollection();
+        var collection = CollectionManager.getInstance().getCollection();
         InputParser inputParser = App.getInputParser();
         Movie movie = new Movie();
         movie = inputParser.parseObject(movie);

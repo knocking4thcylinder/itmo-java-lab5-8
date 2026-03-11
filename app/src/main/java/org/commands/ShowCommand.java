@@ -3,22 +3,20 @@ package org.commands;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
-public class FilterContainsNameCommand implements Executable {
+public class ShowCommand implements Executable {
 
     @Override
     public String exec(String... args) {
-        if (args.length != 1) {
+        if (args.length != 0) {
             throw new IllegalArgumentException(
-                "command \"filter_contains_name\" accepts exactly one argument"
+                "command \"show\" does not accept any arguments"
             );
         }
         StringBuilder sb = new StringBuilder();
         for (Movie movie : CollectionManager.getInstance()
             .getCollection()
             .values()) {
-            if (movie.getName() != null && movie.getName().contains(args[0])) {
-                sb.append(movie).append("\n");
-            }
+            sb.append(movie).append("\n");
         }
         return sb.toString();
     }

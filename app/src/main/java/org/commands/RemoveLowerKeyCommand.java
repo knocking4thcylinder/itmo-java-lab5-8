@@ -1,7 +1,7 @@
 package org.commands;
 
 import java.util.Iterator;
-import org.App;
+import org.CollectionManager;
 
 public class RemoveLowerKeyCommand implements Executable {
 
@@ -13,7 +13,7 @@ public class RemoveLowerKeyCommand implements Executable {
             );
         }
         String key = args[0];
-        var collection = App.getCollection();
+        var collection = CollectionManager.getInstance().getCollection();
         Iterator<String> iterator = collection.keySet().iterator();
         int removedCount = 0;
         while (iterator.hasNext()) {

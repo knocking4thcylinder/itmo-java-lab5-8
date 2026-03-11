@@ -1,0 +1,3 @@
+info
+filter_contains_name Inception
+filter_by_genre ADVENTURE

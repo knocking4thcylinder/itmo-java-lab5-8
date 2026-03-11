@@ -1,6 +1,6 @@
 package org.commands;
 
-import org.App;
+import org.CollectionManager;
 
 public class ClearComand implements Executable {
 
@@ -12,8 +12,8 @@ public class ClearComand implements Executable {
             );
         }
 
-        int collectionLength = App.getCollection().values().toArray().length;
-        App.getCollection().clear();
+        int collectionLength = CollectionManager.getInstance().size();
+        CollectionManager.getInstance().clear();
         return "collection cleared, removed " + collectionLength + " elements";
     }
 }

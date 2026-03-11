@@ -8,7 +8,6 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
@@ -22,7 +21,6 @@ public class App {
 
     private static String fileName;
     private static InputParser inputParser;
-    private static TreeMap<String, Movie> collection = new TreeMap<>();
 
     public static String getStorageFile() {
         return App.fileName;
@@ -30,10 +28,6 @@ public class App {
 
     public static InputParser getInputParser() {
         return App.inputParser;
-    }
-
-    public static TreeMap<String, Movie> getCollection() {
-        return collection;
     }
 
     public static void main(String[] args)
@@ -59,6 +53,8 @@ public class App {
                     ", check write permissions"
             );
         }
+
+        TreeMap<String, Movie> loadedCollection = new TreeMap<>();
         try (
             Scanner scanner = new Scanner(
                 Files.newInputStream(inputPath),
@@ -69,7 +65,7 @@ public class App {
                 Map.Entry<String, Movie> movie = Movie.fromXML(
                     scanner.match().group(0)
                 );
-                collection.put(movie.getKey(), movie.getValue());
+                loadedCollection.put(movie.getKey(), movie.getValue());
             }
         } catch (FileNotFoundException e) {
             throw new FileNotFoundException(
@@ -83,27 +79,11 @@ public class App {
             );
         } catch (Exception e) {
             e.printStackTrace();
-            inputParser.setInputStream(System.in);
         }
-        // Location operatorLocation = new Location(515074L, -0.1278, "London");
-        // Person movieOperator = new Person(
-        //     "Christopher Nolan",
-        //     78.5,
-        //     "PASSPORT98765",
-        //     Country.CHINA,
-        //     operatorLocation
-        // );
-        // Coordinates movieCoordinates = new Coordinates(150, 350);
 
-        // Movie testMovie = new Movie(
-        //     "Inception",
-        //     movieCoordinates,
-        //     4, // oscarsCount > 0
-        //     MovieGenre.ADVENTURE,
-        //     MpaaRating.PG_13,
-        //     movieOperator
-        // );
-        // collection.put(testMovie.getID(), testMovie);
+        CollectionManager cm = CollectionManager.getInstance();
+        cm.setCollection(loadedCollection);
+
         App.inputParser = new InputParser(System.in);
         CommandInvoker invoker = new CommandInvoker();
         System.out.print("> ");
@@ -113,11 +93,14 @@ public class App {
                 continue;
             }
             try {
-                invoker.invoke(
+                String result = invoker.invoke(
                     command[0],
                     Arrays.copyOfRange(command, 1, command.length)
                 );
-            } catch (NoSuchObjectException e) {
+                if (result != null && !result.isEmpty()) {
+                    System.out.println(result);
+                }
+            } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
             System.out.print("> ");

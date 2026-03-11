@@ -1,6 +1,6 @@
 package org.commands;
 
-import org.App;
+import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
@@ -14,7 +14,9 @@ public class FilterLessThanMpaaRatingCommand implements Executable {
             );
         }
         StringBuilder sb = new StringBuilder();
-        for (Movie movie : App.getCollection().values()) {
+        for (Movie movie : CollectionManager.getInstance()
+            .getCollection()
+            .values()) {
             if (
                 movie.getMpaaRating().compareTo(MpaaRating.valueOf(args[0])) < 0
             ) {

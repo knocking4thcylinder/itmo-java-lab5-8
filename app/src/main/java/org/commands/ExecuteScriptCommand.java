@@ -11,10 +11,11 @@ import org.App;
 
 public class ExecuteScriptCommand implements Executable {
 
-    private static java.util.Set<String> executingScripts = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private static java.util.Set<String> executingScripts =
+        java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
     @Override
-    public String execute(String... args)
+    public String exec(String... args)
         throws FileNotFoundException, AccessDeniedException {
         if (args.length != 1) {
             throw new IllegalArgumentException(

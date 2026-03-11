@@ -1,6 +1,7 @@
 package org.commands;
 
 import org.App;
+import org.CollectionManager;
 import org.dataclasses.Movie;
 
 public class UpdateCommand implements Executable {
@@ -19,7 +20,7 @@ public class UpdateCommand implements Executable {
         } catch (NumberFormatException e) {
             return "\"" + args[0] + "\" is not a valid id";
         }
-        var collection = App.getCollection();
+        var collection = CollectionManager.getInstance().getCollection();
         InputParser inputParser = App.getInputParser();
         for (var entry : collection.entrySet()) {
             if (entry.getValue().getId() == id) {

@@ -1,6 +1,6 @@
 package org.commands;
 
-import org.App;
+import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MovieGenre;
 
@@ -14,7 +14,9 @@ public class FilterByGenreCommand implements Executable {
             );
         }
         StringBuilder sb = new StringBuilder();
-        for (Movie movie : App.getCollection().values()) {
+        for (Movie movie : CollectionManager.getInstance()
+            .getCollection()
+            .values()) {
             if (
                 movie.getGenre() != null &&
                 movie.getGenre().equals(MovieGenre.valueOf(args[0]))

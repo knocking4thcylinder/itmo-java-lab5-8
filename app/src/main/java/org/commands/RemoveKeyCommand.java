@@ -1,6 +1,6 @@
 package org.commands;
 
-import org.App;
+import org.CollectionManager;
 
 public class RemoveKeyCommand implements Executable {
 
@@ -12,10 +12,10 @@ public class RemoveKeyCommand implements Executable {
             );
         }
         String key = args[0];
-        if (!App.getCollection().keySet().contains(key)) {
+        if (!CollectionManager.getInstance().containsKey(key)) {
             return "no element with key " + key + " exists in the collection";
         }
-        App.getCollection().remove(key);
+        CollectionManager.getInstance().remove(key);
         return "removed element with key " + key;
     }
 }

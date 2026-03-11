@@ -1,0 +1,4 @@
+info
+filter_by_genre ADVENTURE
+filter_contains_name Inception
+filter_less_than_mpaa_rating PG_13
