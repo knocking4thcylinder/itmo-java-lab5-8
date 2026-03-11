@@ -6,13 +6,15 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
 import org.App;
 
 public class ExecuteScriptCommand implements Executable {
 
-    public static void exec(String... args)
+    private static java.util.Set<String> executingScripts = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+    @Override
+    public String execute(String... args)
         throws FileNotFoundException, AccessDeniedException {
         if (args.length != 1) {
             throw new IllegalArgumentException(
@@ -20,6 +22,10 @@ public class ExecuteScriptCommand implements Executable {
             );
         }
         String fileName = args[0];
+        if (executingScripts.contains(fileName)) {
+            return "Cannot execute script recursively: " + fileName;
+        }
+
         File inputFile = new File(fileName);
         if (!inputFile.exists()) {
             throw new FileNotFoundException(
@@ -40,8 +46,8 @@ public class ExecuteScriptCommand implements Executable {
         }
 
         CommandInvoker commandInvoker = new CommandInvoker();
-
         InputParser inputParser = App.getInputParser();
+        StringBuilder sb = new StringBuilder();
 
         try {
             inputParser.setInputStream(
@@ -62,20 +68,28 @@ public class ExecuteScriptCommand implements Executable {
         } catch (IOException e) {
             inputParser.setInputStream(System.in);
             e.printStackTrace();
+            return "Error reading script file";
         }
 
+        executingScripts.add(fileName);
         try {
             for (var command : inputParser) {
-                commandInvoker.invoke(
-                    command[0],
-                    Arrays.copyOfRange(command, 1, command.length)
-                );
+                try {
+                    String result = commandInvoker.invoke(
+                        command[0],
+                        Arrays.copyOfRange(command, 1, command.length)
+                    );
+                    if (result != null && !result.isEmpty()) {
+                        sb.append(result).append("\n");
+                    }
+                } catch (Exception e) {
+                    sb.append(e.getMessage()).append("\n");
+                }
             }
-        } catch (NoSuchObjectException e) {
-            inputParser.setInputStream(System.in);
-            e.printStackTrace();
         } finally {
+            executingScripts.remove(fileName);
             inputParser.setInputStream(System.in);
         }
+        return sb.toString();
     }
 }

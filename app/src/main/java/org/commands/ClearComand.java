@@ -4,7 +4,8 @@ import org.App;
 
 public class ClearComand implements Executable {
 
-    public static void exec(String... args) {
+    @Override
+    public String exec(String... args) {
         if (args.length != 0) {
             throw new IllegalArgumentException(
                 "command \"clear\" does not accept any arguments"
@@ -13,8 +14,6 @@ public class ClearComand implements Executable {
 
         int collectionLength = App.getCollection().values().toArray().length;
         App.getCollection().clear();
-        System.out.println(
-            "collection cleared, removed " + collectionLength + " elements"
-        );
+        return "collection cleared, removed " + collectionLength + " elements";
     }
 }

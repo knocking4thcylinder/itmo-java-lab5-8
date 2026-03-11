@@ -3,9 +3,7 @@
  */
 package org;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;

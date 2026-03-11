@@ -5,16 +5,19 @@ import org.dataclasses.Movie;
 
 public class FilterContainsNameCommand implements Executable {
 
-    public static void exec(String... args) {
+    @Override
+    public String exec(String... args) {
         if (args.length != 1) {
             throw new IllegalArgumentException(
                 "command \"filter_contains_name\" accepts exactly one argument"
             );
         }
+        StringBuilder sb = new StringBuilder();
         for (Movie movie : App.getCollection().values()) {
-            if (movie.getName().contains(args[0])) {
-                System.out.println(movie);
+            if (movie.getName() != null && movie.getName().contains(args[0])) {
+                sb.append(movie).append("\n");
             }
         }
+        return sb.toString();
     }
 }

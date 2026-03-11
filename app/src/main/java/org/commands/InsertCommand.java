@@ -5,7 +5,8 @@ import org.dataclasses.Movie;
 
 public class InsertCommand implements Executable {
 
-    public static void exec(String... args) throws Exception {
+    @Override
+    public String exec(String... args) throws Exception {
         if (args.length != 1) {
             throw new IllegalArgumentException(
                 "command \"insert\" accepts exactly one argument"
@@ -17,6 +18,6 @@ public class InsertCommand implements Executable {
         Movie movie = new Movie();
         movie = inputParser.parseObject(movie);
         collection.put(key, movie);
-        System.out.println("element " + key + " successfully inserted");
+        return "element " + key + " successfully inserted";
     }
 }

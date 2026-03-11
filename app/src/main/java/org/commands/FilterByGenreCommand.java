@@ -6,16 +6,22 @@ import org.dataclasses.enums.MovieGenre;
 
 public class FilterByGenreCommand implements Executable {
 
-    public static void exec(String... args) {
+    @Override
+    public String exec(String... args) {
         if (args.length != 1) {
             throw new IllegalArgumentException(
                 "command \"filter_by_genre\" accepts exactly one argument"
             );
         }
+        StringBuilder sb = new StringBuilder();
         for (Movie movie : App.getCollection().values()) {
-            if (movie.getGenre().equals(MovieGenre.valueOf(args[0]))) {
-                System.out.println(movie);
+            if (
+                movie.getGenre() != null &&
+                movie.getGenre().equals(MovieGenre.valueOf(args[0]))
+            ) {
+                sb.append(movie).append("\n");
             }
         }
+        return sb.toString();
     }
 }

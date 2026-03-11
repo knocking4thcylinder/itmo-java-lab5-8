@@ -12,7 +12,8 @@ import org.App;
 
 public class SaveCommand implements Executable {
 
-    public static void exec(String... args) {
+    @Override
+    public String exec(String... args) {
         if (args.length != 0) {
             throw new IllegalArgumentException(
                 "command \"save\" does not accept any arguments"
@@ -38,10 +39,10 @@ public class SaveCommand implements Executable {
                 eventWriter.add(eventFactory.createCharacters("\n"));
             }
             eventWriter.add(eventFactory.createEndDocument());
-            System.out.println(
+            return (
                 "Successfully saved the collection to file \"" +
-                    App.getStorageFile() +
-                    "\""
+                App.getStorageFile() +
+                "\""
             );
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -50,5 +51,6 @@ public class SaveCommand implements Executable {
         } catch (XMLStreamException e) {
             e.printStackTrace();
         }
+        return "Failed to save collection";
     }
 }
