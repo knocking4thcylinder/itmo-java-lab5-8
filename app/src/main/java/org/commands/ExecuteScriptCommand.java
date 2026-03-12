@@ -62,23 +62,23 @@ public class ExecuteScriptCommand implements Executable {
         StringBuilder sb = new StringBuilder();
 
         try {
-            inputParser.setInputStream(
-                Files.newInputStream(Paths.get(fileName))
+            inputParser.setInputSource(
+                new ScannerInputSource(Files.newInputStream(Paths.get(fileName)))
             );
         } catch (FileNotFoundException e) {
-            inputParser.setInputStream(System.in);
+            inputParser.setInputSource(new ScannerInputSource(System.in));
             throw new FileNotFoundException(
                 "no file found on path " + fileName
             );
         } catch (AccessDeniedException e) {
-            inputParser.setInputStream(System.in);
+            inputParser.setInputSource(new ScannerInputSource(System.in));
             throw new AccessDeniedException(
                 "cant read the file on path " +
                     fileName +
                     ", chech read permissions"
             );
         } catch (IOException e) {
-            inputParser.setInputStream(System.in);
+            inputParser.setInputSource(new ScannerInputSource(System.in));
             e.printStackTrace();
             return "Error reading script file";
         }
@@ -100,7 +100,7 @@ public class ExecuteScriptCommand implements Executable {
             }
         } finally {
             executingScripts.remove(fileName);
-            inputParser.setInputStream(System.in);
+            inputParser.setInputSource(new ScannerInputSource(System.in));
         }
         return sb.toString();
     }

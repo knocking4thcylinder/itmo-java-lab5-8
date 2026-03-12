@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -8,32 +7,30 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.InputMismatchException;
 import java.util.Iterator;
-import java.util.Scanner;
 import java.util.stream.Stream;
 
 /**
  * Класс для парсинга пользовательского ввода.
- * Обеспечивает ввод команд и данных фильмов из потока ввода.
+ * Обеспечивает ввод команд и данных фильмов из источника ввода.
  */
-
 public class InputParser implements AutoCloseable, Iterable<String[]> {
 
-    private Scanner inputScanner;
+    private InputSource inputSource;
 
     /**
-     * Конструктор с потоком ввода.
-     * @param inputStream поток ввода (например, System.in или FileInputStream)
+     * Конструктор с источником ввода.
+     * @param inputSource источник ввода (например, ScannerInputSource)
      */
-    public InputParser(InputStream inputStream) {
-        this.inputScanner = new Scanner(inputStream);
+    public InputParser(InputSource inputSource) {
+        this.inputSource = inputSource;
     }
 
     /**
-     * Устанавливает новый поток ввода.
-     * @param inputStream новый поток ввода
+     * Устанавливает новый источник ввода.
+     * @param inputSource новый источник ввода
      */
-    public void setInputStream(InputStream inputStream) {
-        this.inputScanner = new Scanner(inputStream);
+    public void setInputSource(InputSource inputSource) {
+        this.inputSource = inputSource;
     }
 
     /**
@@ -41,7 +38,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
      * @return массив строк - команда и её аргументы
      */
     public String[] parseCommand() {
-        return inputScanner.nextLine().trim().split(" ");
+        return inputSource.readLine().trim().split(" ");
     }
 
     /**
@@ -64,7 +61,6 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             Method tmpSetter = (Method) setter;
             String tmpSetterName = tmpSetter.getName();
             Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
-            // System.out.println(tmpSetterName + " " + tmpFieldType);
             this.parseField(instance, tmpSetterName, tmpFieldType);
         }
         return instance;
@@ -111,7 +107,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             fieldName +
                             ": "
                     );
-                    parsedInput = inputScanner.nextLine();
+                    parsedInput = inputSource.readLine();
                     result = Integer.valueOf(parsedInput.trim());
                 } else if (
                     fieldType.equals(long.class) || fieldType.equals(Long.class)
@@ -123,7 +119,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             fieldName +
                             ": "
                     );
-                    parsedInput = inputScanner.nextLine();
+                    parsedInput = inputSource.readLine();
                     result = Long.valueOf(parsedInput.trim());
                 } else if (
                     fieldType.equals(double.class) ||
@@ -136,7 +132,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             fieldName +
                             ": "
                     );
-                    parsedInput = inputScanner.nextLine();
+                    parsedInput = inputSource.readLine();
                     result = Double.valueOf(parsedInput.trim());
                 } else if (fieldType.equals(String.class)) {
                     System.out.print(
@@ -147,7 +143,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             ": "
                     );
 
-                    parsedInput = inputScanner.nextLine();
+                    parsedInput = inputSource.readLine();
                     result = parsedInput.trim();
                 } else if (fieldType.isEnum()) {
                     System.out.print(", possible values for this field: ");
@@ -167,7 +163,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             fieldName +
                             ": "
                     );
-                    parsedInput = inputScanner.nextLine();
+                    parsedInput = inputSource.readLine();
                     result = Enum.valueOf(
                         (Class<Enum>) fieldType,
                         parsedInput.trim()
@@ -179,7 +175,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                 continue;
             } catch (IllegalArgumentException e) {
                 System.out.print(
-                    "cannot propperly parse string \"" +
+                    "cannot properly parse string \"" +
                         parsedInput +
                         "\", the value must be of type \"" +
                         fieldType.getSimpleName() +
@@ -208,7 +204,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             }
 
             System.out.println(
-                " - this is an object, you will be prompted to insert it's fields now"
+                " - this is an object, you will be prompted to insert its fields now"
             );
             Object tmpObject;
             try {
@@ -231,7 +227,6 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                 Method tmpSetter = (Method) setter;
                 String tmpSetterName = tmpSetter.getName();
                 Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
-                // System.out.println(tmpSetterName + " " + tmpFieldType);
                 this.parseField(tmpObject, tmpSetterName, tmpFieldType);
             }
             result = tmpObject;
@@ -246,7 +241,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
     public Iterator<String[]> iterator() {
         return new Iterator<String[]>() {
             public boolean hasNext() {
-                return inputScanner.hasNextLine();
+                return inputSource.hasNextLine();
             }
 
             public String[] next() {
@@ -256,9 +251,15 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
     }
 
     /**
-     * Закрывает сканер ввода.
+     * Закрывает источник ввода.
      */
     public void close() {
-        inputScanner.close();
+        if (inputSource instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) inputSource).close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

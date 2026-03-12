@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
 import org.commands.InputParser;
+import org.commands.ScannerInputSource;
 import org.dataclasses.*;
 
 /**
@@ -102,7 +103,7 @@ public class App {
         CollectionManager cm = CollectionManager.getInstance();
         cm.setCollection(loadedCollection);
 
-        App.inputParser = new InputParser(System.in);
+        App.inputParser = new InputParser(new ScannerInputSource(System.in));
         CommandInvoker invoker = new CommandInvoker();
         System.out.print("> ");
         for (String[] command : App.inputParser) {
