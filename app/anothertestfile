@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<Movie key="1452345235djvnjdnv">
+	<id>100019</id>
+	<name>null</name>
+	<coordinates>
+		<x>123</x>
+		<y>-123</y>
+	</coordinates>
+	<creationDate>2026-03-13T22:01:50.877321</creationDate>
+	<oscarsCount>2345325</oscarsCount>
+	<genre>ACTION</genre>
+	<mpaaRating>G</mpaaRating>
+	<operator>
+		<name>asfdsfqwerertwsdg</name>
+		<weight>3.2453245E7</weight>
+		<nationality>CHINA</nationality>
+		<location>
+			<x>235353245</x>
+			<y>3245.0</y>
+		</location>
+	</operator>
+</Movie>
 <Movie key="3245">
 	<id>0</id>
 	<name>Inception</name>

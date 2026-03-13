@@ -63,7 +63,9 @@ public class ExecuteScriptCommand implements Executable {
 
         try {
             inputParser.setInputSource(
-                new ScannerInputSource(Files.newInputStream(Paths.get(fileName)))
+                new ScannerInputSource(
+                    Files.newInputStream(Paths.get(fileName))
+                )
             );
         } catch (FileNotFoundException e) {
             inputParser.setInputSource(new ScannerInputSource(System.in));
@@ -87,8 +89,16 @@ public class ExecuteScriptCommand implements Executable {
         try {
             for (var command : inputParser) {
                 try {
+                    String commandName = command[0];
+
+                    if (commandName.equalsIgnoreCase("execute_script")) {
+                        throw new IllegalArgumentException(
+                            "Recursive execution of 'execute_script' is not allowed"
+                        );
+                    }
+
                     String result = commandInvoker.invoke(
-                        command[0],
+                        commandName,
                         Arrays.copyOfRange(command, 1, command.length)
                     );
                     if (result != null && !result.isEmpty()) {

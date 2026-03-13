@@ -61,7 +61,26 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             Method tmpSetter = (Method) setter;
             String tmpSetterName = tmpSetter.getName();
             Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
-            this.parseField(instance, tmpSetterName, tmpFieldType);
+            boolean flag = false;
+            do {
+                try {
+                    flag = false;
+                    this.parseField(instance, tmpSetterName, tmpFieldType);
+                } catch (InputMismatchException e) {
+                    e.printStackTrace();
+                    flag = true;
+                    continue;
+                } catch (IllegalArgumentException e) {
+                    System.out.println(e.getMessage());
+                    System.out.print(
+                        "cannot properly parse input, the value must be of type \"" +
+                            tmpFieldType.getSimpleName() +
+                            "\". please try again\n"
+                    );
+                    flag = true;
+                    continue;
+                }
+            } while (flag);
         }
         return instance;
     }
@@ -92,146 +111,94 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                 " with type " +
                 fieldType.getSimpleName()
         );
-        boolean flag = false;
-        do {
-            flag = false;
-            try {
-                if (
-                    fieldType.equals(int.class) ||
-                    fieldType.equals(Integer.class)
-                ) {
-                    System.out.print(
-                        "\n" +
-                            instance.getClass().getSimpleName() +
-                            "." +
-                            fieldName +
-                            ": "
-                    );
-                    parsedInput = inputSource.readLine();
-                    result = Integer.valueOf(parsedInput.trim());
-                } else if (
-                    fieldType.equals(long.class) || fieldType.equals(Long.class)
-                ) {
-                    System.out.print(
-                        "\n" +
-                            instance.getClass().getSimpleName() +
-                            "." +
-                            fieldName +
-                            ": "
-                    );
-                    parsedInput = inputSource.readLine();
-                    result = Long.valueOf(parsedInput.trim());
-                } else if (
-                    fieldType.equals(double.class) ||
-                    fieldType.equals(Double.class)
-                ) {
-                    System.out.print(
-                        "\n" +
-                            instance.getClass().getSimpleName() +
-                            "." +
-                            fieldName +
-                            ": "
-                    );
-                    parsedInput = inputSource.readLine();
-                    result = Double.valueOf(parsedInput.trim());
-                } else if (fieldType.equals(String.class)) {
-                    System.out.print(
-                        "\n" +
-                            instance.getClass().getSimpleName() +
-                            "." +
-                            fieldName +
-                            ": "
-                    );
-
-                    parsedInput = inputSource.readLine();
-                    result = parsedInput.trim();
-                } else if (fieldType.isEnum()) {
-                    System.out.print(", possible values for this field: ");
-                    Object[] enumConstants = fieldType.getEnumConstants();
-                    ArrayList<String> enumConstantNames = new ArrayList<
-                        String
-                    >();
-                    for (Object constant : enumConstants) {
-                        Enum<?> value = (Enum<?>) constant;
-                        enumConstantNames.add(value.name());
-                    }
-                    System.out.print(String.join(", ", enumConstantNames));
-                    System.out.print(
-                        "\n" +
-                            instance.getClass().getSimpleName() +
-                            "." +
-                            fieldName +
-                            ": "
-                    );
-                    parsedInput = inputSource.readLine();
-                    result = Enum.valueOf(
-                        (Class<Enum>) fieldType,
-                        parsedInput.trim()
-                    );
-                }
-            } catch (InputMismatchException e) {
-                e.printStackTrace();
-                flag = true;
-                continue;
-            } catch (IllegalArgumentException e) {
-                System.out.print(
-                    "cannot properly parse string \"" +
-                        parsedInput +
-                        "\", the value must be of type \"" +
-                        fieldType.getSimpleName() +
-                        "\". please try again"
-                );
-                flag = true;
-                continue;
-            }
-            if (result != null) {
-                if (
-                    fieldType.equals(String.class) &&
-                    ((String) result).isEmpty()
-                ) {
-                    result = null;
-                }
-                try {
-                    setterMethod.invoke(instance, result);
-                    return;
-                } catch (InvocationTargetException e) {
-                    System.out.print(
-                        e.getCause().getMessage() + ", please try again"
-                    );
-                    flag = true;
-                    continue;
-                }
-            }
-
-            System.out.println(
-                " - this is an object, you will be prompted to insert its fields now"
+        if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+            System.out.print(
+                "\n" +
+                    instance.getClass().getSimpleName() +
+                    "." +
+                    fieldName +
+                    ": "
             );
-            Object tmpObject;
+            parsedInput = inputSource.readLine();
+            result = Integer.valueOf(parsedInput.trim());
+        } else if (
+            fieldType.equals(long.class) || fieldType.equals(Long.class)
+        ) {
+            System.out.print(
+                "\n" +
+                    instance.getClass().getSimpleName() +
+                    "." +
+                    fieldName +
+                    ": "
+            );
+            parsedInput = inputSource.readLine();
+            result = Long.valueOf(parsedInput.trim());
+        } else if (
+            fieldType.equals(double.class) || fieldType.equals(Double.class)
+        ) {
+            System.out.print(
+                "\n" +
+                    instance.getClass().getSimpleName() +
+                    "." +
+                    fieldName +
+                    ": "
+            );
+            parsedInput = inputSource.readLine();
+            result = Double.valueOf(parsedInput.trim());
+        } else if (fieldType.equals(String.class)) {
+            System.out.print(
+                "\n" +
+                    instance.getClass().getSimpleName() +
+                    "." +
+                    fieldName +
+                    ": "
+            );
+
+            parsedInput = inputSource.readLine();
+            result = parsedInput.trim();
+        } else if (fieldType.isEnum()) {
+            System.out.print(", possible values for this field: ");
+            Object[] enumConstants = fieldType.getEnumConstants();
+            ArrayList<String> enumConstantNames = new ArrayList<String>();
+            for (Object constant : enumConstants) {
+                Enum<?> value = (Enum<?>) constant;
+                enumConstantNames.add(value.name());
+            }
+            System.out.print(String.join(", ", enumConstantNames));
+            System.out.print(
+                "\n" +
+                    instance.getClass().getSimpleName() +
+                    "." +
+                    fieldName +
+                    ": "
+            );
+            parsedInput = inputSource.readLine();
+            result = Enum.valueOf((Class<Enum>) fieldType, parsedInput.trim());
+        }
+        if (result != null) {
+            if (fieldType.equals(String.class) && ((String) result).isEmpty()) {
+                result = null;
+            }
             try {
-                tmpObject = fieldType.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                throw e;
+                setterMethod.invoke(instance, result);
+                return;
+            } catch (InvocationTargetException e) {
+                throw (IllegalArgumentException) e.getCause();
             }
+        }
 
-            Object[] setterArray = Stream.of(fieldType.getMethods())
-                .filter(
-                    e ->
-                        e.getName().startsWith("set") &&
-                        e.getParameterCount() == 1 &&
-                        !Modifier.isStatic(e.getModifiers())
-                )
-                .sorted(Comparator.comparing(Method::getName))
-                .toArray();
-
-            for (Object setter : setterArray) {
-                Method tmpSetter = (Method) setter;
-                String tmpSetterName = tmpSetter.getName();
-                Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
-                this.parseField(tmpObject, tmpSetterName, tmpFieldType);
-            }
-            result = tmpObject;
-            setterMethod.invoke(instance, tmpObject);
-        } while (flag);
+        System.out.println(
+            " - this is an object, you will be prompted to insert its fields now"
+        );
+        Object tmpObject;
+        try {
+            tmpObject = fieldType.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw e;
+        }
+        parseObject(tmpObject);
+        result = tmpObject;
+        setterMethod.invoke(instance, tmpObject);
     }
 
     /**
