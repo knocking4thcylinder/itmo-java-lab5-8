@@ -6,7 +6,7 @@ import org.CollectionManager;
  * Команда для очистки коллекции.
  */
 
-public class ClearComand implements Executable {
+public class ClearCommand implements Executable {
 
     /**
      * Очищает коллекцию.

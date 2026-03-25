@@ -21,7 +21,7 @@ public class CommandInvoker {
         commandMap.put("insert", new InsertCommand());
         commandMap.put("update", new UpdateCommand());
         commandMap.put("exit", new ExitCommand());
-        commandMap.put("clear", new ClearComand());
+        commandMap.put("clear", new ClearCommand());
         commandMap.put("remove_key", new RemoveKeyCommand());
         commandMap.put("replace_if_lower", new ReplaceIfLowerCommand());
         commandMap.put("remove_lower_key", new RemoveLowerKeyCommand());

@@ -61,15 +61,12 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             Method tmpSetter = (Method) setter;
             String tmpSetterName = tmpSetter.getName();
             Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
-            boolean flag = false;
-            do {
+            while (true) {
                 try {
-                    flag = false;
                     this.parseField(instance, tmpSetterName, tmpFieldType);
+                    break;
                 } catch (InputMismatchException e) {
                     e.printStackTrace();
-                    flag = true;
-                    continue;
                 } catch (IllegalArgumentException e) {
                     System.out.println(e.getMessage());
                     System.out.print(
@@ -77,10 +74,8 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                             tmpFieldType.getSimpleName() +
                             "\". please try again\n"
                     );
-                    flag = true;
-                    continue;
                 }
-            } while (flag);
+            }
         }
         return instance;
     }
