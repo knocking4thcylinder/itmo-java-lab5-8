@@ -1,8 +1,9 @@
 package org.commands;
 
-import java.time.LocalDateTime;
 import org.CollectionManager;
 import org.dataclasses.Movie;
+
+import java.time.LocalDateTime;
 
 /**
  * Команда вывода информации о коллекции.

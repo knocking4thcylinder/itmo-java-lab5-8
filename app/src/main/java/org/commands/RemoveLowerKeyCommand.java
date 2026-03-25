@@ -1,7 +1,8 @@
 package org.commands;
 
-import java.util.Iterator;
 import org.CollectionManager;
+
+import java.util.Iterator;
 
 /**
  * Команда для удаления элементов с ключом меньше заданного.

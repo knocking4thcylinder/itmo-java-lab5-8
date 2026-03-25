@@ -1,7 +1,8 @@
 package org.dataclasses;
 
-import java.util.Objects;
 import org.dataclasses.enums.Country;
+
+import java.util.Objects;
 
 /**
  * Класс для хранения данных об операторе фильма.

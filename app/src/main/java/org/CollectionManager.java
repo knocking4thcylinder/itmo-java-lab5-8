@@ -1,8 +1,9 @@
 package org;
 
+import org.dataclasses.Movie;
+
 import java.time.LocalDateTime;
 import java.util.TreeMap;
-import org.dataclasses.Movie;
 
 /**
  * Менеджер коллекции фильмов.

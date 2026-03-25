@@ -3,6 +3,11 @@
  */
 package org;
 
+import org.commands.CommandInvoker;
+import org.commands.InputParser;
+import org.commands.ScannerInputSource;
+import org.dataclasses.Movie;
+
 import java.io.FileNotFoundException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
@@ -13,10 +18,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-import org.commands.CommandInvoker;
-import org.commands.InputParser;
-import org.commands.ScannerInputSource;
-import org.dataclasses.*;
 
 /**
  * Главный класс приложения для управления коллекцией фильмов.
