@@ -102,8 +102,30 @@ public class Location {
     @Override
     public String toString() {
         return (
-            "Location{" + "x=" + x + ", y=" + y + ", name='" + name + '\'' + '}'
+            "Location{" + "x=" + x + ", y=" + y + ", name='" + unescapeXml(name) + '\'' + '}'
         );
+    }
+
+    private String unescapeXml(String input) {
+        if (input == null) return null;
+        StringBuilder sb = new StringBuilder(
+            input
+                .replace("&quot;", "\"")
+                .replace("&apos;", "'")
+                .replace("&lt;",   "<")
+                .replace("&gt;",   ">")
+                .replace("&amp;",  "&")
+        );
+        for (int i = 0; i < sb.length() - 1; i++) {
+            if (sb.charAt(i) == '\\') {
+                switch (sb.charAt(i + 1)) {
+                    case 'n'  -> { sb.replace(i, i + 2, "\n"); }
+                    case 't'  -> { sb.replace(i, i + 2, "\t"); }
+                    case '\\' -> { sb.replace(i, i + 2, "\\"); }
+                }
+            }
+        }
+        return sb.toString();
     }
 
     /**
