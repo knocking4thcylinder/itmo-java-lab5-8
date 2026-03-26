@@ -1,13 +1,5 @@
 package org.dataclasses;
 
-import org.dataclasses.enums.MovieGenre;
-import org.dataclasses.enums.MpaaRating;
-
-import javax.xml.namespace.QName;
-import javax.xml.stream.*;
-import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -17,6 +9,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.xml.namespace.QName;
+import javax.xml.stream.*;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
+import org.dataclasses.enums.MovieGenre;
+import org.dataclasses.enums.MpaaRating;
 
 /**
  * Класс для хранения данных о фильме.
@@ -299,7 +298,6 @@ public class Movie implements Comparable<Movie> {
      * @throws XMLStreamException при ошибке парсинга XML
      * @throws Exception при ошибке создания объекта из XML
      */
-    //TODO
     public static Map.Entry<String, Movie> fromXML(String inputString)
         throws Exception {
         XMLInputFactory inputFactory = XMLInputFactory.newFactory();
@@ -529,14 +527,16 @@ public class Movie implements Comparable<Movie> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Movie movie = (Movie) o;
-        return id == movie.id &&
+        return (
+            id == movie.id &&
             oscarsCount == movie.oscarsCount &&
             Objects.equals(name, movie.name) &&
             Objects.equals(coordinates, movie.coordinates) &&
             Objects.equals(creationDate, movie.creationDate) &&
             genre == movie.genre &&
             mpaaRating == movie.mpaaRating &&
-            Objects.equals(operator, movie.operator);
+            Objects.equals(operator, movie.operator)
+        );
     }
 
     /**
@@ -546,6 +546,15 @@ public class Movie implements Comparable<Movie> {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, coordinates, creationDate, oscarsCount, genre, mpaaRating, operator);
+        return Objects.hash(
+            id,
+            name,
+            coordinates,
+            creationDate,
+            oscarsCount,
+            genre,
+            mpaaRating,
+            operator
+        );
     }
 }

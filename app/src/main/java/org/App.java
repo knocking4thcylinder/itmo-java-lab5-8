@@ -3,11 +3,6 @@
  */
 package org;
 
-import org.commands.CommandInvoker;
-import org.commands.InputParser;
-import org.commands.ScannerInputSource;
-import org.dataclasses.Movie;
-
 import java.io.FileNotFoundException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
@@ -18,6 +13,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import org.commands.CommandInvoker;
+import org.commands.InputParser;
+import org.commands.ScannerInputSource;
+import org.dataclasses.Movie;
 
 /**
  * Главный класс приложения для управления коллекцией фильмов.
@@ -67,11 +66,12 @@ public class App {
         Path inputPath = Paths.get(fileName);
 
         if (!Files.isWritable(inputPath)) {
-            throw new AccessDeniedException(
+            System.out.println(
                 "cant write the file on path " +
                     fileName +
                     ", check write permissions"
             );
+            System.exit(0);
         }
 
         TreeMap<String, Movie> loadedCollection = new TreeMap<>();

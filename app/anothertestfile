@@ -110,6 +110,29 @@
 		</location>
 	</operator>
 </Movie>
+<Movie key="askjfghshfajhsfdb">
+	<id>100031</id>
+	<name>asdfvsadf'asfdsadfa"sadfsadf\n'asdf'sdaf#$sa^@#&amp;^!%dsfg%'"""'''"""'''</name>
+	<coordinates>
+		<x>324</x>
+		<y>234</y>
+	</coordinates>
+	<creationDate>2026-03-26T18:21:08.213409</creationDate>
+	<oscarsCount>32453425</oscarsCount>
+	<genre>ACTION</genre>
+	<mpaaRating>G</mpaaRating>
+	<operator>
+		<name>dsfgsdfg</name>
+		<weight>2.3452345E7</weight>
+		<passportID>234534253245</passportID>
+		<nationality>CHINA</nationality>
+		<location>
+			<x>23453245</x>
+			<y>3.2453245E7</y>
+			<name>kjsadfhkasjdfh</name>
+		</location>
+	</operator>
+</Movie>
 <Movie key="sdfgsdfg">
 	<id>100005</id>
 	<name>sdfwrt</name>

@@ -150,7 +150,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             );
 
             parsedInput = inputSource.readLine();
-            result = parsedInput.trim();
+            result = unescape(parsedInput.trim());
         } else if (fieldType.isEnum()) {
             System.out.print(", possible values for this field: ");
             Object[] enumConstants = fieldType.getEnumConstants();
@@ -210,6 +210,36 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                 return parseCommand();
             }
         };
+    }
+
+    /**
+     * Обрабатывает экранированные символы в строке пользовательского ввода.
+     * Поддерживает: \\ → \, \n → перенос строки, \t → табуляция, \" → "
+     * @param input строка с возможными escape-последовательностями
+     * @return строка с обработанными escape-последовательностями
+     */
+    private String unescape(String input) {
+        StringBuilder sb = new StringBuilder();
+        boolean escaped = false;
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (escaped) {
+                switch (c) {
+                    case '\\' -> sb.append('\\');
+                    case '"'  -> sb.append('"');
+                    default   -> { sb.append('\\'); sb.append(c); }
+                }
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else {
+                sb.append(c);
+            }
+        }
+        if (escaped) {
+            sb.append('\\');
+        }
+        return sb.toString();
     }
 
     /**
