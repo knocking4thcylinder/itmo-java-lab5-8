@@ -1,12 +1,17 @@
 package org.dataclasses;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Класс для хранения координат (x, y).
  * Представляет собой пару целочисленных координат на плоскости.
  */
-public class Coordinates {
+public class Coordinates implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private Integer x;
     private Integer y;

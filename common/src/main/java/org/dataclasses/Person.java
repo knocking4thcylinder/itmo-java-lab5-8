@@ -1,14 +1,18 @@
 package org.dataclasses;
 
-import org.dataclasses.enums.Country;
-
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
+import org.dataclasses.enums.Country;
 
 /**
  * Класс для хранения данных об операторе фильма.
  * Содержит информацию об имени, весе, паспортных данных, национальности и местоположении человека.
  */
-public class Person {
+public class Person implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private String name;
     private double weight;

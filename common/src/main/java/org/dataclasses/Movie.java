@@ -1,5 +1,7 @@
 package org.dataclasses;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -16,12 +18,16 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import org.dataclasses.enums.MovieGenre;
 import org.dataclasses.enums.MpaaRating;
+import org.protocol.MovieData;
 
 /**
  * Класс для хранения данных о фильме.
  */
 
-public class Movie implements Comparable<Movie> {
+public class Movie implements Comparable<Movie>, Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private static int minNotUsedId = 100000;
     private int id;
@@ -103,6 +109,29 @@ public class Movie implements Comparable<Movie> {
         if (id > minNotUsedId) {
             minNotUsedId = id;
         }
+    }
+
+    public static Movie fromData(MovieData data) {
+        return new Movie(
+            data.getName(),
+            data.getCoordinates(),
+            data.getOscarsCount(),
+            data.getGenre(),
+            data.getMpaaRating(),
+            data.getOperator()
+        );
+    }
+
+    public static Movie fromData(
+        MovieData data,
+        int id,
+        LocalDateTime creationDate
+    ) {
+        Movie movie = fromData(data);
+        movie.setId(id);
+        movie.setCreationDate(creationDate);
+        Movie.setMinNotUsedId(id);
+        return movie;
     }
 
     private void writeObjectToXML(

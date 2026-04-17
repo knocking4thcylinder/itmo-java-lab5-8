@@ -5,9 +5,13 @@
 guava = "33.4.6-jre"
 junit-jupiter = "5.12.1"
 jaxb = "4.0.5"
+slf4j = "2.0.17"
+logback = "1.5.20"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 jaxb-api = { module = "jakarta.xml.bind:jakarta.xml.bind-api", version.ref = "jaxb" }
 jaxb-runtime = { module = "org.glassfish.jaxb:jaxb-runtime", version.ref = "jaxb" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
