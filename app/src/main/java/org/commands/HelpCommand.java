@@ -1,22 +1,20 @@
 package org.commands;
 
+import java.io.Serializable;
+
 /**
  * Команда вывода справки по доступным командам.
  */
-class HelpCommand implements Executable {
+class HelpCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Выводит справку по доступным командам.
-     * @param args аргументы команды
      * @return строка со справкой
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"help\" does not accept any arguments"
-            );
-        }
+    public String exec() {
         return """
         help : вывести справку по доступным командам
         info : вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)

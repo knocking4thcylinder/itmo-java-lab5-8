@@ -1,5 +1,6 @@
 package org.commands;
 
+import java.io.Serializable;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
@@ -8,20 +9,16 @@ import java.time.LocalDateTime;
 /**
  * Команда вывода информации о коллекции.
  */
-public class InfoCommand implements Executable {
+public class InfoCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Выводит информацию о коллекции.
-     * @param args аргументы команды
      * @return информация о коллекции
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"info\" does not accept any arguments"
-            );
-        }
+    public String exec() {
         CollectionManager cm = CollectionManager.getInstance();
         StringBuilder sb = new StringBuilder();
         sb

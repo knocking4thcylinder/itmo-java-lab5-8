@@ -14,6 +14,8 @@ import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
+import org.commands.CommandFactory;
+import org.commands.Executable;
 import org.commands.InputParser;
 import org.commands.ScannerInputSource;
 import org.dataclasses.Movie;
@@ -106,17 +108,19 @@ public class App {
 
         App.inputParser = new InputParser(new ScannerInputSource(System.in));
         CommandInvoker invoker = new CommandInvoker();
+        CommandFactory commandFactory = new CommandFactory(App.inputParser);
         System.out.print("> ");
         for (String[] command : App.inputParser) {
-            if (command[0] == "") {
+            if (command[0].isEmpty()) {
                 System.out.print("> ");
                 continue;
             }
             try {
-                String result = invoker.invoke(
+                Executable executable = commandFactory.create(
                     command[0],
                     Arrays.copyOfRange(command, 1, command.length)
                 );
+                String result = invoker.invoke(executable);
                 if (result != null && !result.isEmpty()) {
                     System.out.println(result);
                 }

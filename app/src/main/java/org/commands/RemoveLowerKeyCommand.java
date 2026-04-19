@@ -1,5 +1,6 @@
 package org.commands;
 
+import java.io.Serializable;
 import org.CollectionManager;
 
 import java.util.Iterator;
@@ -8,21 +9,30 @@ import java.util.Iterator;
  * Команда для удаления элементов с ключом меньше заданного.
  */
 
-public class RemoveLowerKeyCommand implements Executable {
+public class RemoveLowerKeyCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final String key;
+
+    /**
+     * Создает команду удаления элементов с ключом меньше заданного.
+     *
+     * @param key пороговый ключ
+     */
+    public RemoveLowerKeyCommand(String key) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("Key cannot be null or blank");
+        }
+        this.key = key;
+    }
 
     /**
      * Удаляет фильмы с ключом меньше заданного.
-     * @param args аргументы команды, где args[0] - ключ
      * @return результат выполнения
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"remove_lower_key\" accepts exactly one argument"
-            );
-        }
-        String key = args[0];
+    public String exec() {
         var collection = CollectionManager.getInstance().getCollection();
         Iterator<String> iterator = collection.keySet().iterator();
         int removedCount = 0;

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLOutputFactory;
@@ -15,20 +16,16 @@ import org.CollectionManager;
  * Команда для сохранения коллекции в файл.
  */
 
-public class SaveCommand implements Executable {
+public class SaveCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Сохраняет коллекцию в файл.
-     * @param args аргументы команды
      * @return результат выполнения
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"save\" does not accept any arguments"
-            );
-        }
+    public String exec() {
         try (
             FileOutputStream outputStream = new FileOutputStream(
                 new File(App.getStorageFile()),

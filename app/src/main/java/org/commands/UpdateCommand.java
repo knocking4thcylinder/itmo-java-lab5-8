@@ -1,6 +1,7 @@
 package org.commands;
 
-import org.App;
+import java.io.Serializable;
+import java.util.Objects;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
@@ -8,34 +9,43 @@ import org.dataclasses.Movie;
  * Команда для обновления элемента коллекции по id.
  */
 
-public class UpdateCommand implements Executable {
+public class UpdateCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final int id;
+    private final Movie movie;
+
+    /**
+     * Создает команду обновления элемента по id.
+     *
+     * @param id идентификатор фильма
+     * @param movie новые данные фильма
+     */
+    public UpdateCommand(int id, Movie movie) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Id must be greater than zero");
+        }
+        this.id = id;
+        this.movie = Objects.requireNonNull(movie, "Movie cannot be null");
+    }
 
     /**
      * Обновляет фильм по id.
-     * @param args аргументы команды, где args[0] - id фильма
      * @return результат выполнения
-     * @throws Exception при ошибке ввода
      */
     @Override
-    public String exec(String... args) throws Exception {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"update\" accepts exactly one argument"
-            );
-        }
-
-        int id;
-        try {
-            id = Integer.valueOf(args[0]);
-        } catch (NumberFormatException e) {
-            return "\"" + args[0] + "\" is not a valid id";
-        }
+    public String exec() {
         var collection = CollectionManager.getInstance().getCollection();
-        InputParser inputParser = App.getInputParser();
         for (var entry : collection.entrySet()) {
             if (entry.getValue().getId() == id) {
-                Movie movie = inputParser.parseObject(entry.getValue());
-                collection.put(entry.getKey(), movie);
+                Movie existingMovie = entry.getValue();
+                existingMovie.setName(movie.getName());
+                existingMovie.setCoordinates(movie.getCoordinates());
+                existingMovie.setOscarsCount(movie.getOscarsCount());
+                existingMovie.setGenre(movie.getGenre());
+                existingMovie.setMpaaRating(movie.getMpaaRating());
+                existingMovie.setOperator(movie.getOperator());
                 return "element " + entry.getKey() + " successfully updated";
             }
         }

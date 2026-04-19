@@ -1,12 +1,15 @@
 package org.dataclasses;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Класс для хранения местоположения.
  * Представляет собой трехмерные координаты с названием места.
  */
-public class Location {
+public class Location implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private long x;
     private double y;

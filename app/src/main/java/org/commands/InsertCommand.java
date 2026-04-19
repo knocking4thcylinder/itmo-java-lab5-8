@@ -1,6 +1,7 @@
 package org.commands;
 
-import org.App;
+import java.io.Serializable;
+import java.util.Objects;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
@@ -8,26 +9,34 @@ import org.dataclasses.Movie;
  * Команда для добавления нового элемента с заданным ключом.
  */
 
-public class InsertCommand implements Executable {
+public class InsertCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final String key;
+    private final Movie movie;
+
+    /**
+     * Создает команду добавления нового элемента.
+     *
+     * @param key ключ элемента
+     * @param movie фильм для вставки
+     */
+    public InsertCommand(String key, Movie movie) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("Key cannot be null or blank");
+        }
+        this.key = key;
+        this.movie = Objects.requireNonNull(movie, "Movie cannot be null");
+    }
 
     /**
      * Добавляет фильм с заданным ключом.
-     * @param args аргументы команды, где args[0] - ключ
      * @return результат выполнения
-     * @throws Exception при ошибке ввода
      */
     @Override
-    public String exec(String... args) throws Exception {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"insert\" accepts exactly one argument"
-            );
-        }
-        String key = args[0];
+    public String exec() {
         var collection = CollectionManager.getInstance().getCollection();
-        InputParser inputParser = App.getInputParser();
-        Movie movie = new Movie();
-        movie = inputParser.parseObject(movie);
         collection.put(key, movie);
         return "element " + key + " successfully inserted";
     }

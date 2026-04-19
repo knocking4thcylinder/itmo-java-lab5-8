@@ -5,6 +5,7 @@ import org.App;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,27 +15,37 @@ import java.util.Arrays;
  * Команда для выполнения скрипта из файла.
  */
 
-public class ExecuteScriptCommand implements Executable {
+public class ExecuteScriptCommand implements Executable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static java.util.Set<String> executingScripts =
         java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final String fileName;
+
+    /**
+     * Создает команду выполнения скрипта.
+     *
+     * @param fileName имя файла со скриптом
+     */
+    public ExecuteScriptCommand(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new IllegalArgumentException(
+                "Script file name cannot be null or blank"
+            );
+        }
+        this.fileName = fileName;
+    }
 
     /**
      * Выполняет скрипт из файла.
-     * @param args аргументы команды, где args[0] - имя файла
      * @return результаты выполнения команд скрипта
      * @throws FileNotFoundException при отсутствии файла
      * @throws AccessDeniedException при отсутствии прав доступа
      */
     @Override
-    public String exec(String... args)
+    public String exec()
         throws FileNotFoundException, AccessDeniedException {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"execute_script\" accepts exactly one argument"
-            );
-        }
-        String fileName = args[0];
         if (executingScripts.contains(fileName)) {
             return "Cannot execute script recursively: " + fileName;
         }
@@ -60,6 +71,7 @@ public class ExecuteScriptCommand implements Executable {
 
         CommandInvoker commandInvoker = new CommandInvoker();
         InputParser inputParser = App.getInputParser();
+        CommandFactory commandFactory = new CommandFactory(inputParser);
         StringBuilder sb = new StringBuilder();
 
         try {
@@ -99,8 +111,10 @@ public class ExecuteScriptCommand implements Executable {
                     }
 
                     String result = commandInvoker.invoke(
-                        commandName,
-                        Arrays.copyOfRange(command, 1, command.length)
+                        commandFactory.create(
+                            commandName,
+                            Arrays.copyOfRange(command, 1, command.length)
+                        )
                     );
                     if (result != null && !result.isEmpty()) {
                         sb.append(result).append("\n");

@@ -1,5 +1,6 @@
 package org.dataclasses;
 
+import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -21,7 +22,9 @@ import org.dataclasses.enums.MpaaRating;
  * Класс для хранения данных о фильме.
  */
 
-public class Movie implements Comparable<Movie> {
+public class Movie implements Comparable<Movie>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static int minNotUsedId = 100000;
     private int id;
