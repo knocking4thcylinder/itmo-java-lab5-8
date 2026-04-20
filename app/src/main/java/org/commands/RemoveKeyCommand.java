@@ -1,15 +1,12 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 
 /**
  * Команда для удаления элемента по ключу.
  */
 
-public class RemoveKeyCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class RemoveKeyCommand extends ServerCommand {
 
     private final String key;
 

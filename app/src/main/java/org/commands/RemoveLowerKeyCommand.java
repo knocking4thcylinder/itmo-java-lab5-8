@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 
 import java.util.Iterator;
@@ -9,9 +8,7 @@ import java.util.Iterator;
  * Команда для удаления элементов с ключом меньше заданного.
  */
 
-public class RemoveLowerKeyCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class RemoveLowerKeyCommand extends ServerCommand {
 
     private final String key;
 

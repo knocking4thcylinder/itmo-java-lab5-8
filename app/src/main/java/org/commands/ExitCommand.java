@@ -1,18 +1,14 @@
 package org.commands;
 
-import java.io.Serializable;
-
 /**
- * Команда для завершения программы.
+ * Клиентская команда завершения приложения.
  */
-
-public class ExitCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ExitCommand extends ClientCommand {
 
     /**
-     * Завершает программу.
-     * @return пустая строка
+     * Завершает клиентское приложение.
+     *
+     * @return недостижимое значение
      */
     @Override
     public String exec() {

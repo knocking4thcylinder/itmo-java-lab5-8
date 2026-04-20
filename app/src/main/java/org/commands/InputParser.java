@@ -34,6 +34,14 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
     }
 
     /**
+     * Возвращает текущий источник ввода.
+     * @return текущий источник ввода
+     */
+    public InputSource getInputSource() {
+        return inputSource;
+    }
+
+    /**
      * Парсит команду из входного потока.
      * @return массив строк - команда и её аргументы
      */

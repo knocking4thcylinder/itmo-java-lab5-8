@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.CollectionManager;
 import org.dataclasses.Movie;
@@ -9,9 +8,7 @@ import org.dataclasses.Movie;
  * Команда для замены значения по ключу, если новое меньше старого.
  */
 
-public class ReplaceIfLowerCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ReplaceIfLowerCommand extends ServerCommand {
 
     private final String key;
     private final Movie movie;

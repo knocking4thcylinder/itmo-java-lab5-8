@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.CollectionManager;
 import org.dataclasses.Movie;
@@ -9,9 +8,7 @@ import org.dataclasses.Movie;
  * Команда для обновления элемента коллекции по id.
  */
 
-public class UpdateCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class UpdateCommand extends ServerCommand {
 
     private final int id;
     private final Movie movie;

@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
@@ -9,10 +8,7 @@ import org.dataclasses.enums.MpaaRating;
  * Команда для вывода элементов с рейтингом меньше заданного.
  */
 
-public class FilterLessThanMpaaRatingCommand
-    implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class FilterLessThanMpaaRatingCommand extends ServerCommand {
 
     private final MpaaRating mpaaRating;
 

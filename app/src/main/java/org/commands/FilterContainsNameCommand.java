@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
@@ -8,10 +7,7 @@ import org.dataclasses.Movie;
  * Команда для вывода элементов, имя которых содержит подстроку.
  */
 
-public class FilterContainsNameCommand
-    implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class FilterContainsNameCommand extends ServerCommand {
 
     private final String namePart;
 

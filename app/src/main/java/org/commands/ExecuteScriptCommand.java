@@ -1,131 +1,118 @@
 package org.commands;
 
-import org.App;
-
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
- * Команда для выполнения скрипта из файла.
+ * Клиентская команда выполнения скрипта.
  */
+public class ExecuteScriptCommand extends ClientCommand {
 
-public class ExecuteScriptCommand implements Executable, Serializable {
+    private static final Set<String> executingScripts =
+        Collections.synchronizedSet(new HashSet<>());
 
-    private static final long serialVersionUID = 1L;
-
-    private static java.util.Set<String> executingScripts =
-        java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private final String fileName;
+    private final InputParser inputParser;
+    private final CommandFactory commandFactory;
 
     /**
      * Создает команду выполнения скрипта.
      *
      * @param fileName имя файла со скриптом
+     * @param inputParser парсер ввода клиента
+     * @param commandFactory фабрика команд
      */
-    public ExecuteScriptCommand(String fileName) {
+    public ExecuteScriptCommand(
+        String fileName,
+        InputParser inputParser,
+        CommandFactory commandFactory
+    ) {
         if (fileName == null || fileName.isBlank()) {
             throw new IllegalArgumentException(
                 "Script file name cannot be null or blank"
             );
         }
         this.fileName = fileName;
+        this.inputParser = Objects.requireNonNull(
+            inputParser,
+            "Input parser cannot be null"
+        );
+        this.commandFactory = Objects.requireNonNull(
+            commandFactory,
+            "Command factory cannot be null"
+        );
     }
 
     /**
-     * Выполняет скрипт из файла.
-     * @return результаты выполнения команд скрипта
-     * @throws FileNotFoundException при отсутствии файла
-     * @throws AccessDeniedException при отсутствии прав доступа
+     * Выполняет скрипт из локального файла клиента.
+     *
+     * @return суммарный результат выполнения команд скрипта
+     * @throws Exception если возникает ошибка чтения или выполнения
      */
     @Override
-    public String exec()
-        throws FileNotFoundException, AccessDeniedException {
+    public String exec() throws Exception {
         if (executingScripts.contains(fileName)) {
             return "Cannot execute script recursively: " + fileName;
         }
 
-        File inputFile = new File(fileName);
-        if (!inputFile.exists()) {
-            throw new FileNotFoundException(
-                "no file found on path " + fileName
-            );
-        } else if (!inputFile.canRead()) {
+        Path scriptPath = Paths.get(fileName);
+        if (!Files.exists(scriptPath)) {
+            throw new FileNotFoundException("no file found on path " + fileName);
+        }
+        if (!Files.isReadable(scriptPath)) {
             throw new AccessDeniedException(
                 "cant read the file on path " +
-                    fileName +
-                    ", check read permissions"
-            );
-        } else if (!inputFile.canWrite()) {
-            throw new AccessDeniedException(
-                "cant write the file on path " +
-                    fileName +
-                    ", check write permissions"
+                fileName +
+                ", check read permissions"
             );
         }
 
-        CommandInvoker commandInvoker = new CommandInvoker();
-        InputParser inputParser = App.getInputParser();
-        CommandFactory commandFactory = new CommandFactory(inputParser);
+        InputSource previousInputSource = inputParser.getInputSource();
         StringBuilder sb = new StringBuilder();
-
-        try {
-            inputParser.setInputSource(
-                new ScannerInputSource(
-                    Files.newInputStream(Paths.get(fileName))
-                )
-            );
-        } catch (FileNotFoundException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            throw new FileNotFoundException(
-                "no file found on path " + fileName
-            );
-        } catch (AccessDeniedException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            throw new AccessDeniedException(
-                "cant read the file on path " +
-                    fileName +
-                    ", chech read permissions"
-            );
-        } catch (IOException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            e.printStackTrace();
-            return "Error reading script file";
-        }
-
+        CommandInvoker commandInvoker = new CommandInvoker();
         executingScripts.add(fileName);
         try {
-            for (var command : inputParser) {
+            inputParser.setInputSource(
+                new ScannerInputSource(Files.newInputStream(scriptPath))
+            );
+            for (String[] nestedCommand : inputParser) {
+                if (nestedCommand.length == 0 || nestedCommand[0].isEmpty()) {
+                    continue;
+                }
                 try {
-                    String commandName = command[0];
-
-                    if (commandName.equalsIgnoreCase("execute_script")) {
-                        throw new IllegalArgumentException(
-                            "Recursive execution of 'execute_script' is not allowed"
-                        );
-                    }
-
                     String result = commandInvoker.invoke(
                         commandFactory.create(
-                            commandName,
-                            Arrays.copyOfRange(command, 1, command.length)
+                            nestedCommand[0],
+                            Arrays.copyOfRange(nestedCommand, 1, nestedCommand.length)
                         )
                     );
                     if (result != null && !result.isEmpty()) {
-                        sb.append(result).append("\n");
+                        if (!sb.isEmpty()) {
+                            sb.append("\n");
+                        }
+                        sb.append(result);
                     }
                 } catch (Exception e) {
-                    sb.append(e.getMessage()).append("\n");
+                    if (!sb.isEmpty()) {
+                        sb.append("\n");
+                    }
+                    sb.append(e.getMessage());
                 }
             }
+        } catch (IOException e) {
+            throw new IOException("Error reading script file", e);
         } finally {
             executingScripts.remove(fileName);
-            inputParser.setInputSource(new ScannerInputSource(System.in));
+            inputParser.setInputSource(previousInputSource);
         }
         return sb.toString();
     }

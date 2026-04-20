@@ -1,15 +1,12 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 
 /**
  * Команда для очистки коллекции.
  */
 
-public class ClearCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ClearCommand extends ServerCommand {
 
     /**
      * Очищает коллекцию.

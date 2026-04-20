@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.CollectionManager;
 import org.dataclasses.Movie;
@@ -9,9 +8,7 @@ import org.dataclasses.Movie;
  * Команда для добавления нового элемента с заданным ключом.
  */
 
-public class InsertCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class InsertCommand extends ServerCommand {
 
     private final String key;
     private final Movie movie;

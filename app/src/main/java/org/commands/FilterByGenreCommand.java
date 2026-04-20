@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MovieGenre;
@@ -9,9 +8,7 @@ import org.dataclasses.enums.MovieGenre;
  * Команда для вывода элементов с заданным жанром.
  */
 
-public class FilterByGenreCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class FilterByGenreCommand extends ServerCommand {
 
     private final MovieGenre genre;
 

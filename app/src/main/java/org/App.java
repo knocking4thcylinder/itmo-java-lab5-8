@@ -111,7 +111,7 @@ public class App {
         CommandFactory commandFactory = new CommandFactory(App.inputParser);
         System.out.print("> ");
         for (String[] command : App.inputParser) {
-            if (command[0].isEmpty()) {
+            if (command.length == 0 || command[0].isEmpty()) {
                 System.out.print("> ");
                 continue;
             }

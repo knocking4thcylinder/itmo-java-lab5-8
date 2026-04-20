@@ -1,13 +1,9 @@
 package org.commands;
 
-import java.io.Serializable;
-
 /**
  * Команда вывода справки по доступным командам.
  */
-class HelpCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+class HelpCommand extends ServerCommand {
 
     /**
      * Выводит справку по доступным командам.

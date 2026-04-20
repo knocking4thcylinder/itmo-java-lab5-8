@@ -93,7 +93,7 @@ public class CommandFactory {
             }
             case "execute_script" -> {
                 requireArgCount(name, args, 1);
-                yield new ExecuteScriptCommand(args[0]);
+                yield new ExecuteScriptCommand(args[0], inputParser, this);
             }
             case "filter_less_than_mpaa_rating" -> {
                 requireArgCount(name, args, 1);

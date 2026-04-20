@@ -1,6 +1,5 @@
 package org.commands;
 
-import java.io.Serializable;
 import org.CollectionManager;
 import org.dataclasses.Movie;
 
@@ -9,9 +8,7 @@ import java.time.LocalDateTime;
 /**
  * Команда вывода информации о коллекции.
  */
-public class InfoCommand implements Executable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class InfoCommand extends ServerCommand {
 
     /**
      * Выводит информацию о коллекции.
