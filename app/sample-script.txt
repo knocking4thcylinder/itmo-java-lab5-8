@@ -1,0 +1,23 @@
+help
+info
+show
+insert demo_movie
+Sky Runner
+120
+45
+3
+ACTION
+PG_13
+Sam Operator
+72.4
+ABCD1234
+ITALY
+Central Plaza
+10
+15.5
+filter_by_genre ACTION
+filter_contains_name Sky
+filter_less_than_mpaa_rating R
+show
+remove_key demo_movie
+show

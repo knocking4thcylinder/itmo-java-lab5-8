@@ -4,10 +4,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Iterator;
-import java.util.stream.Stream;
 
 /**
  * Класс для парсинга пользовательского ввода.
@@ -57,21 +56,28 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
      * @throws Exception при ошибке парсинга
      */
     public <T> T parseObject(T instance) throws Exception {
-        Stream<Method> setterArray = Stream.of(instance.getClass().getMethods())
-            .filter(
-                e ->
-                    e.getName().startsWith("set") &&
-                    e.getParameterCount() == 1 &&
-                    !Modifier.isStatic(e.getModifiers())
-            )
-            .sorted(Comparator.comparing(Method::getName));
-        for (Object setter : setterArray.toArray()) {
-            Method tmpSetter = (Method) setter;
-            String tmpSetterName = tmpSetter.getName();
-            Class<?> tmpFieldType = tmpSetter.getParameterTypes()[0];
+        for (var field : Arrays.stream(instance.getClass().getDeclaredFields()).toList()) {
+            if (Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+
+            String fieldName = field.getName();
+            String setterName =
+                "set" +
+                Character.toUpperCase(fieldName.charAt(0)) +
+                fieldName.substring(1);
+            Method setterMethod;
+            try {
+                setterMethod = instance
+                    .getClass()
+                    .getMethod(setterName, field.getType());
+            } catch (NoSuchMethodException e) {
+                continue;
+            }
+            Class<?> fieldType = setterMethod.getParameterTypes()[0];
             while (true) {
                 try {
-                    this.parseField(instance, tmpSetterName, tmpFieldType);
+                    this.parseField(instance, setterName, fieldType);
                     break;
                 } catch (InputMismatchException e) {
                     e.printStackTrace();
@@ -79,7 +85,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                     System.out.println(e.getMessage());
                     System.out.print(
                         "cannot properly parse input, the value must be of type \"" +
-                            tmpFieldType.getSimpleName() +
+                            fieldType.getSimpleName() +
                             "\". please try again\n"
                     );
                 }

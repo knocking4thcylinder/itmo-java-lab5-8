@@ -11,20 +11,19 @@ plugins {
     eclipse
 }
 
+val clientMainClass = "org.App"
+val serverMainClass = "org.ServerApp"
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
 
 dependencies {
-//    // Use JUnit Jupiter for testing.
-//    testImplementation(libs.junit.jupiter)
-//
-//    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-//
-//    // This dependency is used by the application.
-//    implementation(libs.guava)
-
+    implementation("org.slf4j:slf4j-api:2.0.17")
+    runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -32,8 +31,40 @@ dependencies {
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "org.App"
+            "Main-Class" to clientMainClass
         )
+    }
+}
+
+val clientJar by tasks.registering(Jar::class) {
+    group = "build"
+    description = "Builds a runnable client JAR."
+    archiveClassifier.set("client")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.get().output)
+    from({
+        configurations.runtimeClasspath.get().map { dependency ->
+            if (dependency.isDirectory) dependency else zipTree(dependency)
+        }
+    })
+    manifest {
+        attributes("Main-Class" to clientMainClass)
+    }
+}
+
+val serverJar by tasks.registering(Jar::class) {
+    group = "build"
+    description = "Builds a runnable server JAR."
+    archiveClassifier.set("server")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.get().output)
+    from({
+        configurations.runtimeClasspath.get().map { dependency ->
+            if (dependency.isDirectory) dependency else zipTree(dependency)
+        }
+    })
+    manifest {
+        attributes("Main-Class" to serverMainClass)
     }
 }
 
@@ -45,11 +76,35 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "org.App"
+    mainClass = clientMainClass
     applicationName = "app"
 }
 
-//tasks.named<Test>("test") {
-//    // Use JUnit Platform for unit tests.
-//    useJUnitPlatform()
-//}
+val runClient by tasks.registering(JavaExec::class) {
+    group = "application"
+    description = "Runs the client application."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set(clientMainClass)
+}
+
+val runServer by tasks.registering(JavaExec::class) {
+    group = "application"
+    description = "Runs the server application."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set(serverMainClass)
+}
+
+tasks.named<JavaExec>("run") {
+    group = "application"
+    description = "Runs the client application."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set(clientMainClass)
+}
+
+tasks.named("assemble") {
+    dependsOn(clientJar, serverJar)
+}
+
+tasks.named<Test>("test") {
+    useJUnitPlatform()
+}

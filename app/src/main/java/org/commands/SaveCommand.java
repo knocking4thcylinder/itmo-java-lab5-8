@@ -4,16 +4,24 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
+import org.dataclasses.Movie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Команда для сохранения коллекции в файл.
  */
 
 public class SaveCommand extends ServerCommand {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SaveCommand.class);
 
     /**
      * Сохраняет коллекцию в файл.
@@ -35,12 +43,14 @@ public class SaveCommand extends ServerCommand {
             XMLEventFactory eventFactory = XMLEventFactory.newFactory();
             eventWriter.add(eventFactory.createStartDocument());
             eventWriter.add(eventFactory.createCharacters("\n"));
-            for (var movie : context.collectionManager()
+            String serializedCollection = context.collectionManager()
                 .getCollection()
-                .entrySet()) {
-                outputStream.write(
-                    movie.getValue().toXML(movie.getKey()).getBytes()
-                );
+                .entrySet()
+                .stream()
+                .map(SaveCommand::serializeEntry)
+                .collect(Collectors.joining("\n"));
+            if (!serializedCollection.isEmpty()) {
+                outputStream.write(serializedCollection.getBytes());
                 eventWriter.add(eventFactory.createCharacters("\n"));
             }
             eventWriter.add(eventFactory.createEndDocument());
@@ -50,16 +60,36 @@ public class SaveCommand extends ServerCommand {
                 "\""
             );
         } catch (FileNotFoundException e) {
-            System.out.println(
-                "cant write the file on path " +
-                    context.storagePath() +
-                    ", check write permissions"
+            LOGGER.error(
+                "Cannot write the file on path {}, check write permissions",
+                context.storagePath(),
+                e
+            );
+        } catch (UncheckedIOException e) {
+            LOGGER.error(
+                "Failed to serialize collection while saving to {}",
+                context.storagePath(),
+                e
             );
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("I/O error while saving collection to {}", context.storagePath(), e);
         } catch (XMLStreamException e) {
-            e.printStackTrace();
+            LOGGER.error(
+                "XML error while saving collection to {}",
+                context.storagePath(),
+                e
+            );
         }
         return "Failed to save collection";
+    }
+
+    private static String serializeEntry(Map.Entry<String, Movie> entry) {
+        try {
+            return entry.getValue().toXML(entry.getKey());
+        } catch (XMLStreamException e) {
+            throw new UncheckedIOException(
+                new IOException("Failed to serialize movie entry", e)
+            );
+        }
     }
 }

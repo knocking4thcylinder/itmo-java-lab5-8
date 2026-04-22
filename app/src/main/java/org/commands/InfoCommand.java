@@ -1,9 +1,9 @@
 package org.commands;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import org.CollectionManager;
 import org.dataclasses.Movie;
-
-import java.time.LocalDateTime;
 
 /**
  * Команда вывода информации о коллекции.
@@ -29,22 +29,20 @@ public class InfoCommand extends ServerCommand {
             .append("\n");
         sb.append("Number of elements: ").append(cm.size());
         if (!cm.isEmpty()) {
-            LocalDateTime oldestCreationDate = null;
-            LocalDateTime newestCreationDate = null;
-            for (Movie movie : cm.getCollection().values()) {
-                if (
-                    oldestCreationDate == null ||
-                    movie.getCreationDate().isBefore(oldestCreationDate)
-                ) {
-                    oldestCreationDate = movie.getCreationDate();
-                }
-                if (
-                    newestCreationDate == null ||
-                    movie.getCreationDate().isAfter(newestCreationDate)
-                ) {
-                    newestCreationDate = movie.getCreationDate();
-                }
-            }
+            LocalDateTime oldestCreationDate = cm
+                .getCollection()
+                .values()
+                .stream()
+                .map(Movie::getCreationDate)
+                .min(Comparator.naturalOrder())
+                .orElseThrow();
+            LocalDateTime newestCreationDate = cm
+                .getCollection()
+                .values()
+                .stream()
+                .map(Movie::getCreationDate)
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
             sb
                 .append("\nOldest movie creation date: ")
                 .append(oldestCreationDate);

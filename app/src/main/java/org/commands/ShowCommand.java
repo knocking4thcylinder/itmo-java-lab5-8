@@ -1,7 +1,5 @@
 package org.commands;
 
-import org.dataclasses.Movie;
-
 /**
  * Команда вывода всех элементов коллекции.
  */
@@ -14,12 +12,8 @@ public class ShowCommand extends ServerCommand {
      */
     @Override
     public String exec(ServerContext context) {
-        StringBuilder sb = new StringBuilder();
-        for (Movie movie : context.collectionManager()
-            .getCollection()
-            .values()) {
-            sb.append(movie).append("\n");
-        }
-        return sb.toString();
+        return MovieOutputFormatter.format(
+            context.collectionManager().getCollection().values().stream()
+        );
     }
 }

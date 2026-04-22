@@ -3,55 +3,52 @@
  */
 package org;
 
-import java.io.FileNotFoundException;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.commands.CommandInvoker;
+import java.util.Arrays;
+import org.commands.Command;
 import org.commands.CommandFactory;
+import org.commands.ClientCommandInvoker;
 import org.commands.ClientContext;
 import org.commands.InputParser;
 import org.commands.ScannerInputSource;
-import org.commands.ServerContext;
-import org.dataclasses.Movie;
 
 /**
- * Главный класс приложения для управления коллекцией фильмов.
- * Загружает коллекцию из XML-файла и обрабатывает пользовательские команды.
+ * Клиентское приложение для отправки команд на сервер.
  */
 public class App {
 
     /**
      * Главный метод приложения.
-     * @param args аргументы командной строки (ожидается путь к XML-файлу)
-     * @throws FileNotFoundException если файл не найден
-     * @throws AccessDeniedException если нет доступа к файлу
+     * @param args аргументы командной строки: хост и порт сервера
      */
-    public static void main(String[] args)
-        throws FileNotFoundException, AccessDeniedException {
-        if (args.length != 1) {
+    public static void main(String[] args) {
+        if (args.length != 2) {
             System.out.println(
-                "Usage: java -jar /path/to/.jar /path/to/inputfile.xml"
+                "Usage: java -jar /path/to/.jar <server-host> <server-port>"
             );
             System.exit(1);
         }
-        String fileName = args[0];
-        Path inputPath = Paths.get(fileName);
-
-        CollectionManager cm = CollectionManager.getInstance();
-        cm.setCollection(CollectionLoader.load(inputPath));
-        ServerContext serverContext = new ServerContext(cm, inputPath);
+        String serverHost = args[0];
+        int serverPort;
+        try {
+            serverPort = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            System.out.println("\"" + args[1] + "\" is not a valid port");
+            System.exit(1);
+            return;
+        }
 
         InputParser inputParser = new InputParser(
             new ScannerInputSource(System.in)
         );
-        CommandFactory commandFactory = new CommandFactory(inputParser);
-        CommandInvoker commandInvoker = new CommandInvoker();
+        CommandFactory commandFactory = new CommandFactory(
+            inputParser,
+            CommandFactory.Environment.CLIENT
+        );
+        ClientCommandInvoker commandInvoker = new ClientCommandInvoker(serverHost, serverPort);
         ClientContext clientContext = new ClientContext(
             inputParser,
             commandFactory,
-            commandInvoker,
-            serverContext
+            commandInvoker
         );
         System.out.print("> ");
         for (String[] command : inputParser) {
@@ -60,7 +57,13 @@ public class App {
                 continue;
             }
             try {
-                String result = clientContext.dispatch(command);
+                String result = commandInvoker.invoke(
+                    commandFactory.create(
+                        command[0],
+                        Arrays.copyOfRange(command, 1, command.length)
+                    ),
+                    clientContext
+                );
                 if (result != null && !result.isEmpty()) {
                     System.out.println(result);
                 }

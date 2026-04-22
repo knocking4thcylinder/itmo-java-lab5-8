@@ -33,9 +33,13 @@ public class UpdateCommand extends ServerCommand {
      */
     @Override
     public String exec(ServerContext context) {
-        var collection = context.collectionManager().getCollection();
-        for (var entry : collection.entrySet()) {
-            if (entry.getValue().getId() == id) {
+        return context.collectionManager()
+            .getCollection()
+            .entrySet()
+            .stream()
+            .filter(entry -> entry.getValue().getId() == id)
+            .findFirst()
+            .map(entry -> {
                 Movie existingMovie = entry.getValue();
                 existingMovie.setName(movie.getName());
                 existingMovie.setCoordinates(movie.getCoordinates());
@@ -44,8 +48,7 @@ public class UpdateCommand extends ServerCommand {
                 existingMovie.setMpaaRating(movie.getMpaaRating());
                 existingMovie.setOperator(movie.getOperator());
                 return "element " + entry.getKey() + " successfully updated";
-            }
-        }
-        return "No element with that id exists";
+            })
+            .orElse("No element with that id exists");
     }
 }

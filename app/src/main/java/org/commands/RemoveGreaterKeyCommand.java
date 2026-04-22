@@ -1,7 +1,5 @@
 package org.commands;
 
-import java.util.Iterator;
-
 /**
  * Команда для удаления элементов с ключом больше заданного.
  */
@@ -30,15 +28,12 @@ public class RemoveGreaterKeyCommand extends ServerCommand {
     @Override
     public String exec(ServerContext context) {
         var collection = context.collectionManager().getCollection();
-        Iterator<String> iterator = collection.keySet().iterator();
-        int removedCount = 0;
-        while (iterator.hasNext()) {
-            String k = iterator.next();
-            if (k.compareTo(key) > 0) {
-                iterator.remove();
-                removedCount++;
-            }
-        }
+        long removedCount = collection
+            .keySet()
+            .stream()
+            .filter(k -> k.compareTo(key) > 0)
+            .count();
+        collection.entrySet().removeIf(entry -> entry.getKey().compareTo(key) > 0);
         return (
             "removed " +
             removedCount +

@@ -1,7 +1,9 @@
 package org.commands;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Клиентский контекст выполнения команд.
@@ -10,22 +12,34 @@ public class ClientContext {
 
     private final InputParser inputParser;
     private final CommandFactory commandFactory;
-    private final CommandInvoker commandInvoker;
-    private final ServerContext serverContext;
+    private final ClientCommandInvoker commandInvoker;
+    private final Set<String> executingScripts;
 
     /**
      * Создает новый клиентский контекст.
      *
      * @param inputParser парсер клиентского ввода
      * @param commandFactory фабрика команд
-     * @param commandInvoker инвокер команд
-     * @param serverContext серверный контекст
+     * @param commandInvoker диспетчер выполнения команд
      */
     public ClientContext(
         InputParser inputParser,
         CommandFactory commandFactory,
-        CommandInvoker commandInvoker,
-        ServerContext serverContext
+        ClientCommandInvoker commandInvoker
+    ) {
+        this(
+            inputParser,
+            commandFactory,
+            commandInvoker,
+            Collections.synchronizedSet(new HashSet<>())
+        );
+    }
+
+    private ClientContext(
+        InputParser inputParser,
+        CommandFactory commandFactory,
+        ClientCommandInvoker commandInvoker,
+        Set<String> executingScripts
     ) {
         this.inputParser = Objects.requireNonNull(
             inputParser,
@@ -39,9 +53,9 @@ public class ClientContext {
             commandInvoker,
             "Command invoker cannot be null"
         );
-        this.serverContext = Objects.requireNonNull(
-            serverContext,
-            "Server context cannot be null"
+        this.executingScripts = Objects.requireNonNull(
+            executingScripts,
+            "Executing scripts cannot be null"
         );
     }
 
@@ -55,46 +69,69 @@ public class ClientContext {
     }
 
     /**
-     * Возвращает серверный контекст.
+     * Возвращает фабрику команд.
      *
-     * @return серверный контекст
+     * @return фабрика команд
      */
-    public ServerContext serverContext() {
-        return serverContext;
+    public CommandFactory commandFactory() {
+        return commandFactory;
     }
 
     /**
-     * Создает и выполняет команду, представленную строковыми частями.
+     * Возвращает диспетчер выполнения команд.
      *
-     * @param commandParts имя команды и её аргументы
-     * @return результат выполнения
-     * @throws Exception при ошибке создания или выполнения
+     * @return invoker команд
      */
-    public String dispatch(String[] commandParts) throws Exception {
-        return dispatch(
-            commandFactory.create(
-                commandParts[0],
-                Arrays.copyOfRange(commandParts, 1, commandParts.length)
-            )
+    public ClientCommandInvoker commandInvoker() {
+        return commandInvoker;
+    }
+    
+    /**
+     * Создает копию клиентского контекста с другим источником ввода.
+     *
+     * @param inputSource новый источник ввода для копии
+     * @return копия контекста
+     */
+    public ClientContext copyWithInputSource(InputSource inputSource) {
+        InputParser copiedInputParser = new InputParser(
+            Objects.requireNonNull(inputSource, "Input source cannot be null")
+        );
+        return new ClientContext(
+            copiedInputParser,
+            new CommandFactory(
+                copiedInputParser,
+                CommandFactory.Environment.CLIENT
+            ),
+            commandInvoker,
+            executingScripts
         );
     }
 
     /**
-     * Выполняет уже созданную команду в корректном контексте.
+     * Проверяет, выполняется ли скрипт с указанным именем.
      *
-     * @param command команда для выполнения
-     * @return результат выполнения
-     * @throws Exception при ошибке выполнения
+     * @param fileName имя файла
+     * @return true, если скрипт уже выполняется
      */
-    public String dispatch(Command command) throws Exception {
-        if (command instanceof ClientCommand clientCommand) {
-            return commandInvoker.invoke(clientCommand, this);
-        }
-        if (command instanceof ServerCommand serverCommand) {
-            return commandInvoker.invoke(serverCommand, serverContext);
-        }
-        throw new IllegalStateException(
-            "Unsupported command type: " + command.getClass().getName()
-        );
+    public boolean isExecutingScript(String fileName) {
+        return executingScripts.contains(fileName);
+    }
+
+    /**
+     * Помечает скрипт как выполняющийся.
+     *
+     * @param fileName имя файла
+     */
+    public void beginScript(String fileName) {
+        executingScripts.add(fileName);
+    }
+
+    /**
+     * Снимает отметку выполнения со скрипта.
+     *
+     * @param fileName имя файла
+     */
+    public void endScript(String fileName) {
+        executingScripts.remove(fileName);
     }
 }

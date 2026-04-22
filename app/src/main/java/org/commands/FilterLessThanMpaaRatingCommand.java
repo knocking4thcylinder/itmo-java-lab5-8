@@ -1,6 +1,5 @@
 package org.commands;
 
-import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
 /**
@@ -30,14 +29,12 @@ public class FilterLessThanMpaaRatingCommand extends ServerCommand {
      */
     @Override
     public String exec(ServerContext context) {
-        StringBuilder sb = new StringBuilder();
-        for (Movie movie : context.collectionManager()
-            .getCollection()
-            .values()) {
-            if (movie.getMpaaRating().compareTo(mpaaRating) < 0) {
-                sb.append(movie).append("\n");
-            }
-        }
-        return sb.toString();
+        return MovieOutputFormatter.format(
+            context.collectionManager()
+                .getCollection()
+                .values()
+                .stream()
+                .filter(movie -> movie.getMpaaRating().compareTo(mpaaRating) < 0)
+        );
     }
 }

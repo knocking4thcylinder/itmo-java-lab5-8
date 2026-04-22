@@ -1,22 +1,15 @@
 package org.commands;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
 
 /**
  * Клиентская команда выполнения скрипта.
  */
 public class ExecuteScriptCommand extends ClientCommand {
-
-    private static final Set<String> executingScripts =
-        Collections.synchronizedSet(new HashSet<>());
 
     private final String fileName;
 
@@ -35,19 +28,27 @@ public class ExecuteScriptCommand extends ClientCommand {
     }
 
     /**
-     * Выполняет скрипт из локального файла клиента.
+     * Возвращает имя файла скрипта.
+     *
+     * @return имя файла
+     */
+    public String fileName() {
+        return fileName;
+    }
+
+    /**
+     * Выполняет команды из скрипта последовательно.
      *
      * @param context клиентский контекст
-     * @return суммарный результат выполнения команд скрипта
-     * @throws Exception если возникает ошибка чтения или выполнения
+     * @return пустая строка, так как результаты печатаются по мере выполнения
      */
     @Override
     public String exec(ClientContext context) throws Exception {
-        if (executingScripts.contains(fileName)) {
+        if (context.isExecutingScript(fileName)) {
             return "Cannot execute script recursively: " + fileName;
         }
 
-        Path scriptPath = Paths.get(fileName);
+        var scriptPath = Paths.get(fileName);
         if (!Files.exists(scriptPath)) {
             throw new FileNotFoundException("no file found on path " + fileName);
         }
@@ -59,39 +60,38 @@ public class ExecuteScriptCommand extends ClientCommand {
             );
         }
 
-        InputParser inputParser = context.inputParser();
-        InputSource previousInputSource = inputParser.getInputSource();
-        StringBuilder sb = new StringBuilder();
-        executingScripts.add(fileName);
+        ClientContext newClientContext = context.copyWithInputSource(
+            new ScannerInputSource(Files.newInputStream(scriptPath))
+        );
+        InputParser inputParser = newClientContext.inputParser();
+        context.beginScript(fileName);
         try {
-            inputParser.setInputSource(
-                new ScannerInputSource(Files.newInputStream(scriptPath))
-            );
             for (String[] nestedCommand : inputParser) {
                 if (nestedCommand.length == 0 || nestedCommand[0].isEmpty()) {
                     continue;
                 }
                 try {
-                    String result = context.dispatch(nestedCommand);
+                    String result = newClientContext.commandInvoker().invoke(
+                        newClientContext.commandFactory().create(
+                            nestedCommand[0],
+                            Arrays.copyOfRange(
+                                nestedCommand,
+                                1,
+                                nestedCommand.length
+                            )
+                        ),
+                        newClientContext
+                    );
                     if (result != null && !result.isEmpty()) {
-                        if (!sb.isEmpty()) {
-                            sb.append("\n");
-                        }
-                        sb.append(result);
+                        System.out.println(result);
                     }
                 } catch (Exception e) {
-                    if (!sb.isEmpty()) {
-                        sb.append("\n");
-                    }
-                    sb.append(e.getMessage());
+                    System.out.println(e.getMessage());
                 }
             }
-        } catch (IOException e) {
-            throw new IOException("Error reading script file", e);
         } finally {
-            executingScripts.remove(fileName);
-            inputParser.setInputSource(previousInputSource);
+            context.endScript(fileName);
         }
-        return sb.toString();
+        return "";
     }
 }

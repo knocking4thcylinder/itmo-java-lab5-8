@@ -11,17 +11,27 @@ import org.dataclasses.enums.MpaaRating;
  */
 public class CommandFactory {
 
+    public enum Environment {
+        CLIENT,
+        SERVER,
+    }
+
     private final InputParser inputParser;
+    private final Environment environment;
 
     /**
      * Создает фабрику команд.
      *
      * @param inputParser парсер ввода для команд, которым нужен объект Movie
      */
-    public CommandFactory(InputParser inputParser) {
+    public CommandFactory(InputParser inputParser, Environment environment) {
         this.inputParser = Objects.requireNonNull(
             inputParser,
             "Input parser cannot be null"
+        );
+        this.environment = Objects.requireNonNull(
+            environment,
+            "Environment cannot be null"
         );
     }
 
@@ -37,11 +47,9 @@ public class CommandFactory {
         return switch (name) {
             case "help" -> {
                 requireArgCount(name, args, 0);
-                yield new HelpCommand();
-            }
-            case "save" -> {
-                requireArgCount(name, args, 0);
-                yield new SaveCommand();
+                yield environment == Environment.SERVER
+                    ? new ServerHelpCommand()
+                    : new HelpCommand();
             }
             case "info" -> {
                 requireArgCount(name, args, 0);
@@ -92,8 +100,14 @@ public class CommandFactory {
                 yield new FilterContainsNameCommand(args[0]);
             }
             case "execute_script" -> {
+                ensureEnvironment(name, Environment.CLIENT);
                 requireArgCount(name, args, 1);
                 yield new ExecuteScriptCommand(args[0]);
+            }
+            case "save" -> {
+                ensureEnvironment(name, Environment.SERVER);
+                requireArgCount(name, args, 0);
+                yield new SaveCommand();
             }
             case "filter_less_than_mpaa_rating" -> {
                 requireArgCount(name, args, 1);
@@ -105,6 +119,16 @@ public class CommandFactory {
                 "No command with name \"" + name + "\" exists"
             );
         };
+    }
+
+    private void ensureEnvironment(String commandName, Environment expected) {
+        if (environment != expected) {
+            throw new IllegalArgumentException(
+                "command \"" + commandName + "\" is not available in " +
+                environment.name().toLowerCase() +
+                " mode"
+            );
+        }
     }
 
     private void requireArgCount(String commandName, String[] args, int count) {

@@ -1,6 +1,5 @@
 package org.commands;
 
-import org.dataclasses.Movie;
 import org.dataclasses.enums.MovieGenre;
 
 /**
@@ -30,14 +29,13 @@ public class FilterByGenreCommand extends ServerCommand {
      */
     @Override
     public String exec(ServerContext context) {
-        StringBuilder sb = new StringBuilder();
-        for (Movie movie : context.collectionManager()
-            .getCollection()
-            .values()) {
-            if (movie.getGenre() != null && movie.getGenre().equals(genre)) {
-                sb.append(movie).append("\n");
-            }
-        }
-        return sb.toString();
+        return MovieOutputFormatter.format(
+            context.collectionManager()
+                .getCollection()
+                .values()
+                .stream()
+                .filter(movie -> movie.getGenre() != null)
+                .filter(movie -> movie.getGenre().equals(genre))
+        );
     }
 }
