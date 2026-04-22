@@ -5,13 +5,8 @@ package org;
 
 import java.io.FileNotFoundException;
 import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeMap;
-import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
 import org.commands.CommandFactory;
 import org.commands.ClientContext;
@@ -41,51 +36,10 @@ public class App {
             System.exit(1);
         }
         String fileName = args[0];
-        Pattern pattern = Pattern.compile(
-            "<Movie.*?>.*?</Movie>",
-            Pattern.DOTALL
-        );
-
         Path inputPath = Paths.get(fileName);
 
-        if (!Files.isWritable(inputPath)) {
-            System.out.println(
-                "cant write the file on path " +
-                    fileName +
-                    ", check write permissions"
-            );
-            System.exit(0);
-        }
-
-        TreeMap<String, Movie> loadedCollection = new TreeMap<>();
-        try (
-            Scanner scanner = new Scanner(
-                Files.newInputStream(inputPath),
-                "UTF-8"
-            )
-        ) {
-            while (scanner.findWithinHorizon(pattern, 0) != null) {
-                Map.Entry<String, Movie> movie = Movie.fromXML(
-                    scanner.match().group(0)
-                );
-                loadedCollection.put(movie.getKey(), movie.getValue());
-            }
-        } catch (FileNotFoundException e) {
-            throw new FileNotFoundException(
-                "no file found on path " + fileName
-            );
-        } catch (AccessDeniedException e) {
-            throw new AccessDeniedException(
-                "cant read the file on path " +
-                    fileName +
-                    ", check read permissions"
-            );
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         CollectionManager cm = CollectionManager.getInstance();
-        cm.setCollection(loadedCollection);
+        cm.setCollection(CollectionLoader.load(inputPath));
         ServerContext serverContext = new ServerContext(cm, inputPath);
 
         InputParser inputParser = new InputParser(
