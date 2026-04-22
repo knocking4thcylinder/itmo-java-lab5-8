@@ -33,7 +33,7 @@ public class CommandFactory {
      * @return объект команды
      * @throws Exception если команда не существует или аргументы некорректны
      */
-    public Executable create(String name, String... args) throws Exception {
+    public Command create(String name, String... args) throws Exception {
         return switch (name) {
             case "help" -> {
                 requireArgCount(name, args, 0);
@@ -93,7 +93,7 @@ public class CommandFactory {
             }
             case "execute_script" -> {
                 requireArgCount(name, args, 1);
-                yield new ExecuteScriptCommand(args[0], inputParser, this);
+                yield new ExecuteScriptCommand(args[0]);
             }
             case "filter_less_than_mpaa_rating" -> {
                 requireArgCount(name, args, 1);

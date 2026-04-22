@@ -12,11 +12,12 @@ public class InfoCommand extends ServerCommand {
 
     /**
      * Выводит информацию о коллекции.
+     * @param context серверный контекст
      * @return информация о коллекции
      */
     @Override
-    public String exec() {
-        CollectionManager cm = CollectionManager.getInstance();
+    public String exec(ServerContext context) {
+        CollectionManager cm = context.collectionManager();
         StringBuilder sb = new StringBuilder();
         sb
             .append("Collection type: ")

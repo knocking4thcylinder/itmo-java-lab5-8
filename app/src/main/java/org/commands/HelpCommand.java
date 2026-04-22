@@ -7,10 +7,11 @@ class HelpCommand extends ServerCommand {
 
     /**
      * Выводит справку по доступным командам.
+     * @param context серверный контекст
      * @return строка со справкой
      */
     @Override
-    public String exec() {
+    public String exec(ServerContext context) {
         return """
         help : вывести справку по доступным командам
         info : вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)

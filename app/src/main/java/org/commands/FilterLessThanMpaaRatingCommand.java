@@ -1,6 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
@@ -26,12 +25,13 @@ public class FilterLessThanMpaaRatingCommand extends ServerCommand {
 
     /**
      * Фильтрует фильмы по рейтингу (меньше заданного).
+     * @param context серверный контекст
      * @return отфильтрованные фильмы
      */
     @Override
-    public String exec() {
+    public String exec(ServerContext context) {
         StringBuilder sb = new StringBuilder();
-        for (Movie movie : CollectionManager.getInstance()
+        for (Movie movie : context.collectionManager()
             .getCollection()
             .values()) {
             if (movie.getMpaaRating().compareTo(mpaaRating) < 0) {

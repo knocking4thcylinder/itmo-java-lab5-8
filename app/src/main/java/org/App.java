@@ -8,16 +8,16 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.commands.CommandInvoker;
 import org.commands.CommandFactory;
-import org.commands.Executable;
+import org.commands.ClientContext;
 import org.commands.InputParser;
 import org.commands.ScannerInputSource;
+import org.commands.ServerContext;
 import org.dataclasses.Movie;
 
 /**
@@ -25,25 +25,6 @@ import org.dataclasses.Movie;
  * Загружает коллекцию из XML-файла и обрабатывает пользовательские команды.
  */
 public class App {
-
-    private static String fileName;
-    private static InputParser inputParser;
-
-    /**
-     * Возвращает путь к файлу хранения коллекции.
-     * @return путь к файлу
-     */
-    public static String getStorageFile() {
-        return App.fileName;
-    }
-
-    /**
-     * Возвращает парсер ввода.
-     * @return экземпляр InputParser
-     */
-    public static InputParser getInputParser() {
-        return App.inputParser;
-    }
 
     /**
      * Главный метод приложения.
@@ -59,7 +40,7 @@ public class App {
             );
             System.exit(1);
         }
-        fileName = args[0];
+        String fileName = args[0];
         Pattern pattern = Pattern.compile(
             "<Movie.*?>.*?</Movie>",
             Pattern.DOTALL
@@ -105,22 +86,27 @@ public class App {
 
         CollectionManager cm = CollectionManager.getInstance();
         cm.setCollection(loadedCollection);
+        ServerContext serverContext = new ServerContext(cm, inputPath);
 
-        App.inputParser = new InputParser(new ScannerInputSource(System.in));
-        CommandInvoker invoker = new CommandInvoker();
-        CommandFactory commandFactory = new CommandFactory(App.inputParser);
+        InputParser inputParser = new InputParser(
+            new ScannerInputSource(System.in)
+        );
+        CommandFactory commandFactory = new CommandFactory(inputParser);
+        CommandInvoker commandInvoker = new CommandInvoker();
+        ClientContext clientContext = new ClientContext(
+            inputParser,
+            commandFactory,
+            commandInvoker,
+            serverContext
+        );
         System.out.print("> ");
-        for (String[] command : App.inputParser) {
+        for (String[] command : inputParser) {
             if (command.length == 0 || command[0].isEmpty()) {
                 System.out.print("> ");
                 continue;
             }
             try {
-                Executable executable = commandFactory.create(
-                    command[0],
-                    Arrays.copyOfRange(command, 1, command.length)
-                );
-                String result = invoker.invoke(executable);
+                String result = clientContext.dispatch(command);
                 if (result != null && !result.isEmpty()) {
                     System.out.println(result);
                 }
@@ -129,6 +115,6 @@ public class App {
             }
             System.out.print("> ");
         }
-        App.inputParser.close();
+        inputParser.close();
     }
 }

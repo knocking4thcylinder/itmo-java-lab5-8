@@ -1,7 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
-
 import java.util.Iterator;
 
 /**
@@ -26,11 +24,12 @@ public class RemoveLowerKeyCommand extends ServerCommand {
 
     /**
      * Удаляет фильмы с ключом меньше заданного.
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec() {
-        var collection = CollectionManager.getInstance().getCollection();
+    public String exec(ServerContext context) {
+        var collection = context.collectionManager().getCollection();
         Iterator<String> iterator = collection.keySet().iterator();
         int removedCount = 0;
         while (iterator.hasNext()) {

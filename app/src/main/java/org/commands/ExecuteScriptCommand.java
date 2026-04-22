@@ -6,10 +6,8 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -21,45 +19,30 @@ public class ExecuteScriptCommand extends ClientCommand {
         Collections.synchronizedSet(new HashSet<>());
 
     private final String fileName;
-    private final InputParser inputParser;
-    private final CommandFactory commandFactory;
 
     /**
      * Создает команду выполнения скрипта.
      *
      * @param fileName имя файла со скриптом
-     * @param inputParser парсер ввода клиента
-     * @param commandFactory фабрика команд
      */
-    public ExecuteScriptCommand(
-        String fileName,
-        InputParser inputParser,
-        CommandFactory commandFactory
-    ) {
+    public ExecuteScriptCommand(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             throw new IllegalArgumentException(
                 "Script file name cannot be null or blank"
             );
         }
         this.fileName = fileName;
-        this.inputParser = Objects.requireNonNull(
-            inputParser,
-            "Input parser cannot be null"
-        );
-        this.commandFactory = Objects.requireNonNull(
-            commandFactory,
-            "Command factory cannot be null"
-        );
     }
 
     /**
      * Выполняет скрипт из локального файла клиента.
      *
+     * @param context клиентский контекст
      * @return суммарный результат выполнения команд скрипта
      * @throws Exception если возникает ошибка чтения или выполнения
      */
     @Override
-    public String exec() throws Exception {
+    public String exec(ClientContext context) throws Exception {
         if (executingScripts.contains(fileName)) {
             return "Cannot execute script recursively: " + fileName;
         }
@@ -76,9 +59,9 @@ public class ExecuteScriptCommand extends ClientCommand {
             );
         }
 
+        InputParser inputParser = context.inputParser();
         InputSource previousInputSource = inputParser.getInputSource();
         StringBuilder sb = new StringBuilder();
-        CommandInvoker commandInvoker = new CommandInvoker();
         executingScripts.add(fileName);
         try {
             inputParser.setInputSource(
@@ -89,12 +72,7 @@ public class ExecuteScriptCommand extends ClientCommand {
                     continue;
                 }
                 try {
-                    String result = commandInvoker.invoke(
-                        commandFactory.create(
-                            nestedCommand[0],
-                            Arrays.copyOfRange(nestedCommand, 1, nestedCommand.length)
-                        )
-                    );
+                    String result = context.dispatch(nestedCommand);
                     if (result != null && !result.isEmpty()) {
                         if (!sb.isEmpty()) {
                             sb.append("\n");

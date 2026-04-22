@@ -1,7 +1,6 @@
 package org.commands;
 
 import java.util.Objects;
-import org.CollectionManager;
 import org.dataclasses.Movie;
 
 /**
@@ -29,11 +28,12 @@ public class ReplaceIfLowerCommand extends ServerCommand {
 
     /**
      * Заменяет фильм если новое значение меньше старого.
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec() {
-        var collection = CollectionManager.getInstance().getCollection();
+    public String exec(ServerContext context) {
+        var collection = context.collectionManager().getCollection();
         if (!collection.containsKey(key)) {
             return "no element with key " + key + " exists in the collection";
         }

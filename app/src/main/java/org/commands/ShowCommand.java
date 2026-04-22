@@ -1,6 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
 import org.dataclasses.Movie;
 
 /**
@@ -10,12 +9,13 @@ public class ShowCommand extends ServerCommand {
 
     /**
      * Выводит все фильмы коллекции.
+     * @param context серверный контекст
      * @return строковое представление всех фильмов
      */
     @Override
-    public String exec() {
+    public String exec(ServerContext context) {
         StringBuilder sb = new StringBuilder();
-        for (Movie movie : CollectionManager.getInstance()
+        for (Movie movie : context.collectionManager()
             .getCollection()
             .values()) {
             sb.append(movie).append("\n");

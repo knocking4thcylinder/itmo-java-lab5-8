@@ -9,10 +9,14 @@ public class CommandInvoker {
      * Выполняет команду.
      *
      * @param command объект команды
+     * @param context контекст выполнения команды
      * @return результат выполнения команды
      * @throws Exception если во время выполнения произошла ошибка
      */
-    public String invoke(Executable command) throws Exception {
-        return command.exec();
+    public <C> String invoke(
+        ExecutableWithContext<C> command,
+        C context
+    ) throws Exception {
+        return command.exec(context);
     }
 }

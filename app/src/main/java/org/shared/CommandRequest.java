@@ -1,69 +1,34 @@
 package org.shared;
 
 import java.io.Serializable;
-import java.util.List;
-import org.dataclasses.Movie;
+import java.util.Objects;
+import org.commands.ServerCommand;
 
 /**
- * Универсальный сериализуемый запрос на выполнение команды.
+ * Сериализуемый запрос клиента к серверу.
  *
- * @param commandName имя команды
- * @param arguments аргументы команды
- * @param movie дополнительный объект фильма для команд, которым он нужен
+ * @param command серверная команда для выполнения
  */
-public record CommandRequest(
-    String commandName,
-    List<String> arguments,
-    Movie movie
-) implements Serializable {
+public record CommandRequest(ServerCommand command) implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * Создает новый запрос команды.
      *
-     * @throws IllegalArgumentException если имя команды пустое
-     * @throws NullPointerException если список аргументов равен null
+     * @throws NullPointerException если команда равна null
      */
     public CommandRequest {
-        if (commandName == null || commandName.isBlank()) {
-            throw new IllegalArgumentException(
-                "Command name cannot be null or blank"
-            );
-        }
-        if (arguments == null) {
-            throw new NullPointerException("Command arguments cannot be null");
-        }
-        arguments = List.copyOf(arguments);
+        Objects.requireNonNull(command, "Server command cannot be null");
     }
 
     /**
-     * Создает запрос без объектной части.
+     * Создает новый запрос на выполнение серверной команды.
      *
-     * @param commandName имя команды
-     * @param arguments аргументы команды
+     * @param command серверная команда
      * @return запрос команды
      */
-    public static CommandRequest of(String commandName, List<String> arguments) {
-        return new CommandRequest(commandName, arguments, null);
-    }
-
-    /**
-     * Создает запрос без аргументов и объектной части.
-     *
-     * @param commandName имя команды
-     * @return запрос команды
-     */
-    public static CommandRequest of(String commandName) {
-        return new CommandRequest(commandName, List.of(), null);
-    }
-
-    /**
-     * Возвращает true, если запрос содержит объект фильма.
-     *
-     * @return true при наличии фильма
-     */
-    public boolean hasMovie() {
-        return movie != null;
+    public static CommandRequest of(ServerCommand command) {
+        return new CommandRequest(command);
     }
 }

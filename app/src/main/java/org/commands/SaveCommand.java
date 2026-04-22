@@ -8,8 +8,6 @@ import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import org.App;
-import org.CollectionManager;
 
 /**
  * Команда для сохранения коллекции в файл.
@@ -19,13 +17,14 @@ public class SaveCommand extends ServerCommand {
 
     /**
      * Сохраняет коллекцию в файл.
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec() {
+    public String exec(ServerContext context) {
         try (
             FileOutputStream outputStream = new FileOutputStream(
-                new File(App.getStorageFile()),
+                new File(context.storagePath().toString()),
                 false
             )
         ) {
@@ -36,7 +35,7 @@ public class SaveCommand extends ServerCommand {
             XMLEventFactory eventFactory = XMLEventFactory.newFactory();
             eventWriter.add(eventFactory.createStartDocument());
             eventWriter.add(eventFactory.createCharacters("\n"));
-            for (var movie : CollectionManager.getInstance()
+            for (var movie : context.collectionManager()
                 .getCollection()
                 .entrySet()) {
                 outputStream.write(
@@ -47,13 +46,13 @@ public class SaveCommand extends ServerCommand {
             eventWriter.add(eventFactory.createEndDocument());
             return (
                 "Successfully saved the collection to file \"" +
-                App.getStorageFile() +
+                context.storagePath() +
                 "\""
             );
         } catch (FileNotFoundException e) {
             System.out.println(
                 "cant write the file on path " +
-                    App.getStorageFile() +
+                    context.storagePath() +
                     ", check write permissions"
             );
         } catch (IOException e) {

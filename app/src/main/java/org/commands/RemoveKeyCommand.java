@@ -1,7 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
-
 /**
  * Команда для удаления элемента по ключу.
  */
@@ -24,14 +22,15 @@ public class RemoveKeyCommand extends ServerCommand {
 
     /**
      * Удаляет фильм по ключу.
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec() {
-        if (!CollectionManager.getInstance().containsKey(key)) {
+    public String exec(ServerContext context) {
+        if (!context.collectionManager().containsKey(key)) {
             return "no element with key " + key + " exists in the collection";
         }
-        CollectionManager.getInstance().remove(key);
+        context.collectionManager().remove(key);
         return "removed element with key " + key;
     }
 }

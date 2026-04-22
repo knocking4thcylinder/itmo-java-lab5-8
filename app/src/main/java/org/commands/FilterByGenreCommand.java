@@ -1,6 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
 import org.dataclasses.Movie;
 import org.dataclasses.enums.MovieGenre;
 
@@ -26,12 +25,13 @@ public class FilterByGenreCommand extends ServerCommand {
 
     /**
      * Фильтрует фильмы по жанру.
+     * @param context серверный контекст
      * @return отфильтрованные фильмы
      */
     @Override
-    public String exec() {
+    public String exec(ServerContext context) {
         StringBuilder sb = new StringBuilder();
-        for (Movie movie : CollectionManager.getInstance()
+        for (Movie movie : context.collectionManager()
             .getCollection()
             .values()) {
             if (movie.getGenre() != null && movie.getGenre().equals(genre)) {
