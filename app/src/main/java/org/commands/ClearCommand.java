@@ -6,23 +6,17 @@ import org.CollectionManager;
  * Команда для очистки коллекции.
  */
 
-public class ClearCommand implements Executable {
+public class ClearCommand extends ServerCommand {
 
     /**
      * Очищает коллекцию.
-     * @param args аргументы команды
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"clear\" does not accept any arguments"
-            );
-        }
-
-        int collectionLength = CollectionManager.getInstance().size();
-        CollectionManager.getInstance().clear();
+    public String exec(ServerContext context) {
+        int collectionLength = context.collectionManager().size();
+        context.collectionManager().clear();
         return "collection cleared, removed " + collectionLength + " elements";
     }
 }

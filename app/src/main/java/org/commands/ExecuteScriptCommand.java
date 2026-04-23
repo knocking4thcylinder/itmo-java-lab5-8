@@ -1,118 +1,96 @@
 package org.commands;
 
-import org.App;
-
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
- * Команда для выполнения скрипта из файла.
+ * Клиентская команда выполнения скрипта.
  */
+public class ExecuteScriptCommand extends ClientCommand {
 
-public class ExecuteScriptCommand implements Executable {
-
-    private static java.util.Set<String> executingScripts =
-        java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final String fileName;
 
     /**
-     * Выполняет скрипт из файла.
-     * @param args аргументы команды, где args[0] - имя файла
-     * @return результаты выполнения команд скрипта
-     * @throws FileNotFoundException при отсутствии файла
-     * @throws AccessDeniedException при отсутствии прав доступа
+     * Создает команду выполнения скрипта.
+     *
+     * @param fileName имя файла со скриптом
      */
-    @Override
-    public String exec(String... args)
-        throws FileNotFoundException, AccessDeniedException {
-        if (args.length != 1) {
+    public ExecuteScriptCommand(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
             throw new IllegalArgumentException(
-                "command \"execute_script\" accepts exactly one argument"
+                "Script file name cannot be null or blank"
             );
         }
-        String fileName = args[0];
-        if (executingScripts.contains(fileName)) {
+        this.fileName = fileName;
+    }
+
+    /**
+     * Возвращает имя файла скрипта.
+     *
+     * @return имя файла
+     */
+    public String fileName() {
+        return fileName;
+    }
+
+    /**
+     * Выполняет команды из скрипта последовательно.
+     *
+     * @param context клиентский контекст
+     * @return пустая строка, так как результаты печатаются по мере выполнения
+     */
+    @Override
+    public String exec(ClientContext context) throws Exception {
+        if (context.isExecutingScript(fileName)) {
             return "Cannot execute script recursively: " + fileName;
         }
 
-        File inputFile = new File(fileName);
-        if (!inputFile.exists()) {
-            throw new FileNotFoundException(
-                "no file found on path " + fileName
-            );
-        } else if (!inputFile.canRead()) {
+        var scriptPath = Paths.get(fileName);
+        if (!Files.exists(scriptPath)) {
+            throw new FileNotFoundException("no file found on path " + fileName);
+        }
+        if (!Files.isReadable(scriptPath)) {
             throw new AccessDeniedException(
                 "cant read the file on path " +
-                    fileName +
-                    ", check read permissions"
-            );
-        } else if (!inputFile.canWrite()) {
-            throw new AccessDeniedException(
-                "cant write the file on path " +
-                    fileName +
-                    ", check write permissions"
+                fileName +
+                ", check read permissions"
             );
         }
 
-        CommandInvoker commandInvoker = new CommandInvoker();
-        InputParser inputParser = App.getInputParser();
-        StringBuilder sb = new StringBuilder();
-
-        try {
-            inputParser.setInputSource(
-                new ScannerInputSource(
-                    Files.newInputStream(Paths.get(fileName))
-                )
-            );
-        } catch (FileNotFoundException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            throw new FileNotFoundException(
-                "no file found on path " + fileName
-            );
-        } catch (AccessDeniedException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            throw new AccessDeniedException(
-                "cant read the file on path " +
-                    fileName +
-                    ", chech read permissions"
-            );
-        } catch (IOException e) {
-            inputParser.setInputSource(new ScannerInputSource(System.in));
-            e.printStackTrace();
-            return "Error reading script file";
-        }
-
-        executingScripts.add(fileName);
-        try {
-            for (var command : inputParser) {
+        ClientContext newClientContext = context.copyWithInputSource(
+            new ScannerInputSource(Files.newInputStream(scriptPath))
+        );
+        context.beginScript(fileName);
+        try (InputParser inputParser = newClientContext.inputParser()) {
+            for (String[] nestedCommand : inputParser) {
+                if (nestedCommand.length == 0 || nestedCommand[0].isEmpty()) {
+                    continue;
+                }
                 try {
-                    String commandName = command[0];
-
-                    if (commandName.equalsIgnoreCase("execute_script")) {
-                        throw new IllegalArgumentException(
-                            "Recursive execution of 'execute_script' is not allowed"
-                        );
-                    }
-
-                    String result = commandInvoker.invoke(
-                        commandName,
-                        Arrays.copyOfRange(command, 1, command.length)
+                    String result = newClientContext.commandInvoker().invoke(
+                        newClientContext.commandFactory().create(
+                            nestedCommand[0],
+                            Arrays.copyOfRange(
+                                nestedCommand,
+                                1,
+                                nestedCommand.length
+                            )
+                        ),
+                        newClientContext
                     );
                     if (result != null && !result.isEmpty()) {
-                        sb.append(result).append("\n");
+                        System.out.println(result);
                     }
                 } catch (Exception e) {
-                    sb.append(e.getMessage()).append("\n");
+                    System.out.println(e.getMessage());
                 }
             }
         } finally {
-            executingScripts.remove(fileName);
-            inputParser.setInputSource(new ScannerInputSource(System.in));
+            context.endScript(fileName);
         }
-        return sb.toString();
+        return "";
     }
 }

@@ -1,38 +1,39 @@
 package org.commands;
 
-import org.CollectionManager;
-
-import java.util.Iterator;
-
 /**
  * Команда для удаления элементов с ключом больше заданного.
  */
 
-public class RemoveGreaterKeyCommand implements Executable {
+public class RemoveGreaterKeyCommand extends ServerCommand {
+
+    private final String key;
+
+    /**
+     * Создает команду удаления элементов с ключом больше заданного.
+     *
+     * @param key пороговый ключ
+     */
+    public RemoveGreaterKeyCommand(String key) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("Key cannot be null or blank");
+        }
+        this.key = key;
+    }
 
     /**
      * Удаляет фильмы с ключом больше заданного.
-     * @param args аргументы команды, где args[0] - ключ
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"remove_greater_key\" accepts exactly one argument"
-            );
-        }
-        String key = args[0];
-        var collection = CollectionManager.getInstance().getCollection();
-        Iterator<String> iterator = collection.keySet().iterator();
-        int removedCount = 0;
-        while (iterator.hasNext()) {
-            String k = iterator.next();
-            if (k.compareTo(key) > 0) {
-                iterator.remove();
-                removedCount++;
-            }
-        }
+    public String exec(ServerContext context) {
+        var collection = context.collectionManager().getCollection();
+        long removedCount = collection
+            .keySet()
+            .stream()
+            .filter(k -> k.compareTo(key) > 0)
+            .count();
+        collection.entrySet().removeIf(entry -> entry.getKey().compareTo(key) > 0);
         return (
             "removed " +
             removedCount +

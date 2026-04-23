@@ -1,17 +1,18 @@
 package org.commands;
 
 /**
- * Команда вывода справки по доступным клиентским командам.
+ * Команда вывода справки по доступным серверным командам.
  */
-class HelpCommand extends ClientCommand {
+class ServerHelpCommand extends ServerCommand {
 
     /**
-     * Выводит справку по доступным командам.
-     * @param context клиентский контекст
+     * Выводит справку по доступным серверным командам.
+     *
+     * @param context серверный контекст
      * @return строка со справкой
      */
     @Override
-    public String exec(ClientContext context) {
+    public String exec(ServerContext context) {
         return """
         help : вывести справку по доступным командам
         info : вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)
@@ -20,8 +21,8 @@ class HelpCommand extends ClientCommand {
         update id {element} : обновить значение элемента коллекции, id которого равен заданному
         remove_key null : удалить элемент из коллекции по его ключу
         clear : очистить коллекцию
-        execute_script file_name : считать и исполнить скрипт из указанного файла
-        exit : завершить программу (без сохранения в файл)
+        save : сохранить коллекцию в файл
+        exit : завершить сервер с сохранением коллекции
         replace_if_lower null {element} : заменить значение по ключу, если новое значение меньше старого
         remove_greater_key null : удалить из коллекции все элементы, ключ которых превышает заданный
         remove_lower_key null : удалить из коллекции все элементы, ключ которых меньше, чем заданный

@@ -1,18 +1,18 @@
 package org.commands;
 
 /**
- * Команда для завершения программы.
+ * Клиентская команда завершения приложения.
  */
-
-public class ExitCommand implements Executable {
+public class ExitCommand extends ClientCommand {
 
     /**
-     * Завершает программу.
-     * @param args аргументы команды
-     * @return пустая строка
+     * Завершает клиентское приложение.
+     *
+     * @param context клиентский контекст
+     * @return недостижимое значение
      */
     @Override
-    public String exec(String... args) {
+    public String exec(ClientContext context) {
         System.exit(0);
         return "";
     }

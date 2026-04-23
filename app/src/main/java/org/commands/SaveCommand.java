@@ -4,69 +4,78 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLOutputFactory;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
-import org.App;
-import org.CollectionManager;
+import org.dataclasses.Movie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Команда для сохранения коллекции в файл.
  */
 
-public class SaveCommand implements Executable {
+public class SaveCommand extends ServerCommand {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SaveCommand.class);
 
     /**
      * Сохраняет коллекцию в файл.
-     * @param args аргументы команды
+     * @param context серверный контекст
      * @return результат выполнения
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"save\" does not accept any arguments"
-            );
-        }
+    public String exec(ServerContext context) {
         try (
             FileOutputStream outputStream = new FileOutputStream(
-                new File(App.getStorageFile()),
+                new File(context.storagePath().toString()),
                 false
             )
         ) {
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventWriter eventWriter = outputFactory.createXMLEventWriter(
-                outputStream
-            );
-            XMLEventFactory eventFactory = XMLEventFactory.newFactory();
-            eventWriter.add(eventFactory.createStartDocument());
-            eventWriter.add(eventFactory.createCharacters("\n"));
-            for (var movie : CollectionManager.getInstance()
+            String serializedCollection = context.collectionManager()
                 .getCollection()
-                .entrySet()) {
-                outputStream.write(
-                    movie.getValue().toXML(movie.getKey()).getBytes()
-                );
-                eventWriter.add(eventFactory.createCharacters("\n"));
-            }
-            eventWriter.add(eventFactory.createEndDocument());
+                .entrySet()
+                .stream()
+                .map(SaveCommand::serializeEntry)
+                .collect(Collectors.joining("\n"));
+            String xmlDocument =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                serializedCollection +
+                (serializedCollection.isEmpty() ? "" : "\n");
+            outputStream.write(xmlDocument.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
             return (
                 "Successfully saved the collection to file \"" +
-                App.getStorageFile() +
+                context.storagePath() +
                 "\""
             );
         } catch (FileNotFoundException e) {
-            System.out.println(
-                "cant write the file on path " +
-                    App.getStorageFile() +
-                    ", check write permissions"
+            LOGGER.error(
+                "Cannot write the file on path {}, check write permissions",
+                context.storagePath(),
+                e
+            );
+        } catch (UncheckedIOException e) {
+            LOGGER.error(
+                "Failed to serialize collection while saving to {}",
+                context.storagePath(),
+                e
             );
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XMLStreamException e) {
-            e.printStackTrace();
+            LOGGER.error("I/O error while saving collection to {}", context.storagePath(), e);
         }
         return "Failed to save collection";
+    }
+
+    private static String serializeEntry(Map.Entry<String, Movie> entry) {
+        try {
+            return entry.getValue().toXML(entry.getKey());
+        } catch (XMLStreamException e) {
+            throw new UncheckedIOException(
+                new IOException("Failed to serialize movie entry", e)
+            );
+        }
     }
 }

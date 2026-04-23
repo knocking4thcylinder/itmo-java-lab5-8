@@ -91,6 +91,7 @@ nb-configuration.xml
 
 
 
+**/*.md
 complex_insert
 filter
 ideas.md
@@ -98,3 +99,4 @@ initial_movies.xml
 script1.txt
 script2.txt
 doc
+reports/**

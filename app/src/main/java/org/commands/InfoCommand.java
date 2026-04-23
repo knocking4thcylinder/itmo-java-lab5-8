@@ -1,28 +1,23 @@
 package org.commands;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import org.CollectionManager;
 import org.dataclasses.Movie;
-
-import java.time.LocalDateTime;
 
 /**
  * Команда вывода информации о коллекции.
  */
-public class InfoCommand implements Executable {
+public class InfoCommand extends ServerCommand {
 
     /**
      * Выводит информацию о коллекции.
-     * @param args аргументы команды
+     * @param context серверный контекст
      * @return информация о коллекции
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException(
-                "command \"info\" does not accept any arguments"
-            );
-        }
-        CollectionManager cm = CollectionManager.getInstance();
+    public String exec(ServerContext context) {
+        CollectionManager cm = context.collectionManager();
         StringBuilder sb = new StringBuilder();
         sb
             .append("Collection type: ")
@@ -34,22 +29,20 @@ public class InfoCommand implements Executable {
             .append("\n");
         sb.append("Number of elements: ").append(cm.size());
         if (!cm.isEmpty()) {
-            LocalDateTime oldestCreationDate = null;
-            LocalDateTime newestCreationDate = null;
-            for (Movie movie : cm.getCollection().values()) {
-                if (
-                    oldestCreationDate == null ||
-                    movie.getCreationDate().isBefore(oldestCreationDate)
-                ) {
-                    oldestCreationDate = movie.getCreationDate();
-                }
-                if (
-                    newestCreationDate == null ||
-                    movie.getCreationDate().isAfter(newestCreationDate)
-                ) {
-                    newestCreationDate = movie.getCreationDate();
-                }
-            }
+            LocalDateTime oldestCreationDate = cm
+                .getCollection()
+                .values()
+                .stream()
+                .map(Movie::getCreationDate)
+                .min(Comparator.naturalOrder())
+                .orElseThrow();
+            LocalDateTime newestCreationDate = cm
+                .getCollection()
+                .values()
+                .stream()
+                .map(Movie::getCreationDate)
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
             sb
                 .append("\nOldest movie creation date: ")
                 .append(oldestCreationDate);

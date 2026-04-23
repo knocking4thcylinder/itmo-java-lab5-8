@@ -1,37 +1,40 @@
 package org.commands;
 
-import org.CollectionManager;
-import org.dataclasses.Movie;
 import org.dataclasses.enums.MpaaRating;
 
 /**
  * Команда для вывода элементов с рейтингом меньше заданного.
  */
 
-public class FilterLessThanMpaaRatingCommand implements Executable {
+public class FilterLessThanMpaaRatingCommand extends ServerCommand {
+
+    private final MpaaRating mpaaRating;
+
+    /**
+     * Создает команду фильтрации по рейтингу MPAA.
+     *
+     * @param mpaaRating рейтинг для сравнения
+     */
+    public FilterLessThanMpaaRatingCommand(MpaaRating mpaaRating) {
+        this.mpaaRating = java.util.Objects.requireNonNull(
+            mpaaRating,
+            "Mpaa rating cannot be null"
+        );
+    }
 
     /**
      * Фильтрует фильмы по рейтингу (меньше заданного).
-     * @param args аргументы команды, где args[0] - рейтинг
+     * @param context серверный контекст
      * @return отфильтрованные фильмы
      */
     @Override
-    public String exec(String... args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-                "command \"filter_less_than_mpaa_rating\" accepts exactly one argument"
-            );
-        }
-        StringBuilder sb = new StringBuilder();
-        for (Movie movie : CollectionManager.getInstance()
-            .getCollection()
-            .values()) {
-            if (
-                movie.getMpaaRating().compareTo(MpaaRating.valueOf(args[0])) < 0
-            ) {
-                sb.append(movie).append("\n");
-            }
-        }
-        return sb.toString();
+    public String exec(ServerContext context) {
+        return MovieOutputFormatter.format(
+            context.collectionManager()
+                .getCollection()
+                .values()
+                .stream()
+                .filter(movie -> movie.getMpaaRating().compareTo(mpaaRating) < 0)
+        );
     }
 }
