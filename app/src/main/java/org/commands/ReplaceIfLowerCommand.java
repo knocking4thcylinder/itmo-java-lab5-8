@@ -38,6 +38,7 @@ public class ReplaceIfLowerCommand extends ServerCommand {
             return "no element with key " + key + " exists in the collection";
         }
         if (movie.compareTo(collection.get(key)) < 0) {
+            movie.assignGeneratedFields();
             collection.put(key, movie);
             return "element " + key + " successfully updated";
         }

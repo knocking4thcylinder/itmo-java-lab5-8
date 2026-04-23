@@ -4,7 +4,7 @@ package org.commands;
  * Интерфейс источника ввода для парсера команд.
  * Позволяет использовать различные источники ввода (файл, консоль, сеть).
  */
-public interface InputSource {
+public interface InputSource extends AutoCloseable {
     /**
      * Считывает одну строку из источника ввода.
      * @return считанная строка или null, если ввод закончился
@@ -16,4 +16,10 @@ public interface InputSource {
      * @return true, если есть следующая строка
      */
     boolean hasNextLine();
+
+    /**
+     * Закрывает источник ввода.
+     */
+    @Override
+    default void close() throws Exception {}
 }

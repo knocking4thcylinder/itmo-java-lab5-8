@@ -63,9 +63,8 @@ public class ExecuteScriptCommand extends ClientCommand {
         ClientContext newClientContext = context.copyWithInputSource(
             new ScannerInputSource(Files.newInputStream(scriptPath))
         );
-        InputParser inputParser = newClientContext.inputParser();
         context.beginScript(fileName);
-        try {
+        try (InputParser inputParser = newClientContext.inputParser()) {
             for (String[] nestedCommand : inputParser) {
                 if (nestedCommand.length == 0 || nestedCommand[0].isEmpty()) {
                     continue;

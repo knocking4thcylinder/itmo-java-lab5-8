@@ -238,13 +238,12 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
     /**
      * Закрывает источник ввода.
      */
+    @Override
     public void close() {
-        if (inputSource instanceof AutoCloseable) {
-            try {
-                ((AutoCloseable) inputSource).close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        try {
+            inputSource.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

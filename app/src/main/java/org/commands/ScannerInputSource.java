@@ -8,7 +8,7 @@ import java.util.Scanner;
  * Считывает данные из InputStream (например, System.in или файла).
  */
 public class ScannerInputSource implements InputSource {
-    private Scanner scanner;
+    private final Scanner scanner;
 
     /**
      * Конструктор с потоком ввода.
@@ -34,5 +34,13 @@ public class ScannerInputSource implements InputSource {
     @Override
     public boolean hasNextLine() {
         return scanner.hasNextLine();
+    }
+
+    /**
+     * Закрывает Scanner и связанный с ним поток.
+     */
+    @Override
+    public void close() {
+        scanner.close();
     }
 }

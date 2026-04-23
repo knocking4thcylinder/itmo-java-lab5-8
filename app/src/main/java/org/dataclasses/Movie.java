@@ -38,16 +38,13 @@ public class Movie implements Comparable<Movie>, Serializable {
 
     /**
      * Конструктор по умолчанию.
-     * Создает фильм с автогенерированными id и датой создания.
+     * Создает фильм без автоматически генерируемых полей.
      */
-    public Movie() {
-        this.id = ++minNotUsedId;
-        this.creationDate = LocalDateTime.now();
-    }
+    public Movie() {}
 
     /**
      * Конструктор с параметрами.
-     * Создает фильм с указанными параметрами, id и дата создания генерируются автоматически.
+     * Создает фильм с указанными параметрами без автоматически генерируемых полей.
      * @param name название фильма (не может быть пустым или null)
      * @param coordinates координаты (не могут быть null)
      * @param oscarsCount количество оскаров (должно быть больше 0)
@@ -68,8 +65,7 @@ public class Movie implements Comparable<Movie>, Serializable {
         MpaaRating mpaaRating,
         Person operator
     ) {
-        this.id = ++minNotUsedId;
-        this.creationDate = LocalDateTime.now();
+        assignGeneratedFields();
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                 "Movie.name cannot be empty or null"
@@ -95,6 +91,15 @@ public class Movie implements Comparable<Movie>, Serializable {
             "Movie.mpaaRating cannot be null"
         );
         this.operator = operator;
+    }
+
+    /**
+     * Назначает автоматически генерируемые поля фильма.
+     * Используется сервером при добавлении фильма в коллекцию.
+     */
+    public void assignGeneratedFields() {
+        this.id = ++minNotUsedId;
+        this.creationDate = LocalDateTime.now();
     }
 
     /**
@@ -542,8 +547,7 @@ public class Movie implements Comparable<Movie>, Serializable {
 
     /**
      * Проверяет равенство фильмов.
-     * Фильмы считаются равными, если у них одинаковые id, название, координаты,
-     * дата создания, количество оскаров, жанр, рейтинг MPAA и оператор.
+     * Фильмы считаются равными, если у них одинаковые id.
      * @param o объект для сравнения
      * @return true если фильмы равны, false в противном случае
      */
@@ -552,34 +556,16 @@ public class Movie implements Comparable<Movie>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Movie movie = (Movie) o;
-        return (
-            id == movie.id &&
-            oscarsCount == movie.oscarsCount &&
-            Objects.equals(name, movie.name) &&
-            Objects.equals(coordinates, movie.coordinates) &&
-            Objects.equals(creationDate, movie.creationDate) &&
-            genre == movie.genre &&
-            mpaaRating == movie.mpaaRating &&
-            Objects.equals(operator, movie.operator)
-        );
+        return id == movie.id;
     }
 
     /**
      * Возвращает хэш-код фильма.
-     * Хэш-код вычисляется на основе всех полей фильма.
+     * Хэш-код вычисляется только на основе id.
      * @return хэш-код фильма
      */
     @Override
     public int hashCode() {
-        return Objects.hash(
-            id,
-            name,
-            coordinates,
-            creationDate,
-            oscarsCount,
-            genre,
-            mpaaRating,
-            operator
-        );
+        return Integer.hashCode(id);
     }
 }

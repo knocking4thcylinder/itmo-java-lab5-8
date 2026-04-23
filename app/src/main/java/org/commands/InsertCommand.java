@@ -34,6 +34,7 @@ public class InsertCommand extends ServerCommand {
     @Override
     public String exec(ServerContext context) {
         var collection = context.collectionManager().getCollection();
+        movie.assignGeneratedFields();
         collection.put(key, movie);
         return "element " + key + " successfully inserted";
     }

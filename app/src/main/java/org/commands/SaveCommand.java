@@ -5,11 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import org.dataclasses.Movie;
 import org.slf4j.Logger;
@@ -36,24 +34,18 @@ public class SaveCommand extends ServerCommand {
                 false
             )
         ) {
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventWriter eventWriter = outputFactory.createXMLEventWriter(
-                outputStream
-            );
-            XMLEventFactory eventFactory = XMLEventFactory.newFactory();
-            eventWriter.add(eventFactory.createStartDocument());
-            eventWriter.add(eventFactory.createCharacters("\n"));
             String serializedCollection = context.collectionManager()
                 .getCollection()
                 .entrySet()
                 .stream()
                 .map(SaveCommand::serializeEntry)
                 .collect(Collectors.joining("\n"));
-            if (!serializedCollection.isEmpty()) {
-                outputStream.write(serializedCollection.getBytes());
-                eventWriter.add(eventFactory.createCharacters("\n"));
-            }
-            eventWriter.add(eventFactory.createEndDocument());
+            String xmlDocument =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                serializedCollection +
+                (serializedCollection.isEmpty() ? "" : "\n");
+            outputStream.write(xmlDocument.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
             return (
                 "Successfully saved the collection to file \"" +
                 context.storagePath() +
@@ -73,12 +65,6 @@ public class SaveCommand extends ServerCommand {
             );
         } catch (IOException e) {
             LOGGER.error("I/O error while saving collection to {}", context.storagePath(), e);
-        } catch (XMLStreamException e) {
-            LOGGER.error(
-                "XML error while saving collection to {}",
-                context.storagePath(),
-                e
-            );
         }
         return "Failed to save collection";
     }
