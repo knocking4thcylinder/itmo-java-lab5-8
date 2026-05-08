@@ -101,3 +101,6 @@ script2.txt
 doc
 reports/**
 *.png
+helios
+package.json
+package-lock.json

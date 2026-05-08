@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "Lab5-8"
-include("app")
+include("shared", "client", "server")
