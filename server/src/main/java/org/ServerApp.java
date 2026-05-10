@@ -11,6 +11,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import org.auth.SessionManager;
 import org.commands.ServerCommand;
 import org.commands.ServerContext;
 import org.commands.ServerCommandInvoker;
@@ -57,6 +58,7 @@ public class ServerApp {
             databaseConnector,
             collectionManager
         );
+        SessionManager sessionManager = new SessionManager();
 
         ServerContext serverContext = new ServerContext(
             collectionManager,
@@ -88,7 +90,12 @@ public class ServerApp {
                     } else if (key.isReadable()) {
                         SocketChannel clientChannel = (SocketChannel) key.channel();
                         key.cancel();
-                        handleClient(clientChannel, commandInvoker, serverContext);
+                        handleClient(
+                            clientChannel,
+                            commandInvoker,
+                            serverContext,
+                            sessionManager
+                        );
                     }
                 }
             }
@@ -136,7 +143,8 @@ public class ServerApp {
     private static void handleClient(
         SocketChannel clientChannel,
         ServerCommandInvoker commandInvoker,
-        ServerContext serverContext
+        ServerContext baseServerContext,
+        SessionManager sessionManager
     ) {
         try (clientChannel) {
             clientChannel.configureBlocking(true);
@@ -157,9 +165,14 @@ public class ServerApp {
                         request.command().getClass().getSimpleName(),
                         describeChannel(clientChannel)
                     );
+                    ServerContext requestContext = contextForRequest(
+                        request,
+                        baseServerContext,
+                        sessionManager
+                    );
                     String result = commandInvoker.invoke(
                         request.command(),
-                        serverContext
+                        requestContext
                     );
                     LOGGER.info(
                         "Completed {} from {} with success",
@@ -191,6 +204,21 @@ public class ServerApp {
                 e
             );
         }
+    }
+
+    private static ServerContext contextForRequest(
+        CommandRequest request,
+        ServerContext baseServerContext,
+        SessionManager sessionManager
+    ) {
+        String ownerLogin = sessionManager
+            .findLogin(request.authToken())
+            .orElse(INTERNAL_OWNER_LOGIN);
+        return new ServerContext(
+            baseServerContext.collectionManager(),
+            baseServerContext.movieRepository(),
+            ownerLogin
+        );
     }
 
     private static byte[] readPayload(SocketChannel channel) throws IOException {

@@ -50,6 +50,24 @@ public class ServerContext implements SharedCommandContext {
         return collectionManager;
     }
 
+    /**
+     * Возвращает логин владельца текущего запроса.
+     *
+     * @return логин владельца
+     */
+    public String ownerLogin() {
+        return ownerLogin;
+    }
+
+    /**
+     * Возвращает репозиторий фильмов.
+     *
+     * @return репозиторий фильмов
+     */
+    public MovieRepository movieRepository() {
+        return movieRepository;
+    }
+
     @Override
     public void persistInsertedMovie(String key, Movie movie) throws Exception {
         movieRepository.insert(key, ownerLogin, movie);

@@ -51,14 +51,14 @@ public class ClientCommandInvoker {
             return clientCommand.exec(context);
         }
         if (command instanceof SharedCommand sharedCommand) {
-            return executeOnServer(sharedCommand);
+            return executeOnServer(sharedCommand, context.authToken());
         }
         throw new IllegalStateException(
             "Unsupported command type: " + command.getClass().getName()
         );
     }
 
-    private String executeOnServer(SharedCommand sharedCommand)
+    private String executeOnServer(SharedCommand sharedCommand, String authToken)
         throws Exception {
         IOException lastIOException = null;
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -71,7 +71,7 @@ public class ClientCommandInvoker {
                 socketChannel.register(selector, SelectionKey.OP_CONNECT);
 
                 ByteBuffer writeBuffer = TransportCodec.encode(
-                    CommandRequest.of(sharedCommand)
+                    CommandRequest.of(sharedCommand, authToken)
                 );
                 ByteBuffer lengthBuffer = ByteBuffer.allocate(Integer.BYTES);
                 ByteBuffer payloadBuffer = null;

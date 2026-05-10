@@ -14,6 +14,8 @@ public class ClientContext {
     private final CommandFactory commandFactory;
     private final ClientCommandInvoker commandInvoker;
     private final Set<String> executingScripts;
+    private String login;
+    private String authToken;
 
     /**
      * Создает новый клиентский контекст.
@@ -85,6 +87,46 @@ public class ClientContext {
     public ClientCommandInvoker commandInvoker() {
         return commandInvoker;
     }
+
+    /**
+     * Возвращает логин текущего пользователя.
+     *
+     * @return логин или null
+     */
+    public String login() {
+        return login;
+    }
+
+    /**
+     * Возвращает токен авторизации текущего пользователя.
+     *
+     * @return токен или null
+     */
+    public String authToken() {
+        return authToken;
+    }
+
+    /**
+     * Сохраняет состояние авторизации клиента.
+     *
+     * @param login логин пользователя
+     * @param authToken токен авторизации
+     */
+    public void authenticate(String login, String authToken) {
+        this.login = Objects.requireNonNull(login, "Login cannot be null");
+        this.authToken = Objects.requireNonNull(
+            authToken,
+            "Auth token cannot be null"
+        );
+    }
+
+    /**
+     * Сбрасывает состояние авторизации клиента.
+     */
+    public void clearAuthentication() {
+        this.login = null;
+        this.authToken = null;
+    }
     
     /**
      * Создает копию клиентского контекста с другим источником ввода.
@@ -96,12 +138,15 @@ public class ClientContext {
         InputParser copiedInputParser = new InputParser(
             Objects.requireNonNull(inputSource, "Input source cannot be null")
         );
-        return new ClientContext(
+        ClientContext copiedContext = new ClientContext(
             copiedInputParser,
             new CommandFactory(copiedInputParser),
             commandInvoker,
             executingScripts
         );
+        copiedContext.login = login;
+        copiedContext.authToken = authToken;
+        return copiedContext;
     }
 
     /**
