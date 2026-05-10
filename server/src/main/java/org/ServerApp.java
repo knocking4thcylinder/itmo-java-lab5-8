@@ -3,7 +3,6 @@ package org;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.Channels;
@@ -11,14 +10,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
-import org.commands.SaveCommand;
-import org.commands.ServerContext;
 import org.commands.ServerCommand;
+import org.commands.ServerContext;
 import org.commands.ServerCommandInvoker;
+import org.db.DatabaseConnector;
+import org.db.MovieRepository;
+import org.db.SchemaInitializer;
 import org.shared.CommandRequest;
 import org.shared.CommandResponse;
 import org.shared.TransportCodec;
@@ -35,16 +33,11 @@ public class ServerApp {
     /**
      * Точка входа серверного приложения.
      *
-     * @param args порт и путь к XML-файлу коллекции
-     * @throws FileNotFoundException если файл коллекции не найден
-     * @throws AccessDeniedException если к файлу нет доступа
+     * @param args порт сервера
      */
-    public static void main(String[] args)
-        throws FileNotFoundException, AccessDeniedException {
-        if (args.length != 2) {
-            System.out.println(
-                "Usage: java org.ServerApp <port> <path/to/inputfile.xml>"
-            );
+    public static void main(String[] args) {
+        if (args.length != 1) {
+            System.out.println("Usage: java org.ServerApp <port>");
             System.exit(1);
         }
 
@@ -57,12 +50,12 @@ public class ServerApp {
             return;
         }
 
-        Path inputPath = Paths.get(args[1]);
         CollectionManager collectionManager = CollectionManager.getInstance();
-        collectionManager.setCollection(CollectionLoader.load(inputPath));
-        ServerContext serverContext = new ServerContext(collectionManager, inputPath);
+        DatabaseConnector databaseConnector = new DatabaseConnector();
+        initializeDatabase(databaseConnector, collectionManager);
+
+        ServerContext serverContext = new ServerContext(collectionManager);
         ServerCommandInvoker commandInvoker = new ServerCommandInvoker();
-        registerShutdownHook(commandInvoker, serverContext);
         startConsole(commandInvoker, serverContext);
 
         try (
@@ -72,9 +65,7 @@ public class ServerApp {
             serverChannel.bind(new InetSocketAddress(port));
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-            LOGGER.info(
-                "Server started on port " + port + ", storage: " + inputPath
-            );
+            LOGGER.info("Server started on port {}", port);
             while (true) {
                 selector.select();
                 Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
@@ -95,6 +86,26 @@ public class ServerApp {
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start server", e);
+        }
+    }
+
+    private static void initializeDatabase(
+        DatabaseConnector databaseConnector,
+        CollectionManager collectionManager
+    ) {
+        try {
+            LOGGER.info("Initializing database schema");
+            new SchemaInitializer(databaseConnector).initialize();
+            LOGGER.info("Loading collection from database");
+            collectionManager.setCollection(
+                new MovieRepository(databaseConnector).loadAll()
+            );
+            LOGGER.info(
+                "Loaded {} movies from database",
+                collectionManager.size()
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialize database", e);
         }
     }
 
@@ -232,10 +243,6 @@ public class ServerApp {
                 requireArgCount(commandLine, 0);
                 yield new org.commands.ServerHelpCommand();
             }
-            case "save" -> {
-                requireArgCount(commandLine, 0);
-                yield new SaveCommand();
-            }
             default -> throw new IllegalArgumentException(
                 "No server command with name \"" + commandLine[0] + "\" exists"
             );
@@ -254,20 +261,6 @@ public class ServerApp {
                 (count == 1 ? "" : "s")
             );
         }
-    }
-
-    private static void registerShutdownHook(
-        ServerCommandInvoker commandInvoker,
-        ServerContext serverContext
-    ) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                String result = commandInvoker.invoke(new SaveCommand(), serverContext);
-                LOGGER.info("Shutdown save completed: {}", result);
-            } catch (Exception e) {
-                LOGGER.error("Shutdown save failed", e);
-            }
-        }, "server-shutdown-hook"));
     }
 
     private static String describeChannel(SocketChannel channel) {
