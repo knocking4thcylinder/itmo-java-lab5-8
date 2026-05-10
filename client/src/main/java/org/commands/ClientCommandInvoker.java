@@ -51,14 +51,17 @@ public class ClientCommandInvoker {
             return clientCommand.exec(context);
         }
         if (command instanceof SharedCommand sharedCommand) {
-            return executeOnServer(sharedCommand, context.authToken());
+            return executeOnServer(sharedCommand, context);
         }
         throw new IllegalStateException(
             "Unsupported command type: " + command.getClass().getName()
         );
     }
 
-    private String executeOnServer(SharedCommand sharedCommand, String authToken)
+    private String executeOnServer(
+        SharedCommand sharedCommand,
+        ClientContext context
+    )
         throws Exception {
         IOException lastIOException = null;
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -71,7 +74,7 @@ public class ClientCommandInvoker {
                 socketChannel.register(selector, SelectionKey.OP_CONNECT);
 
                 ByteBuffer writeBuffer = TransportCodec.encode(
-                    CommandRequest.of(sharedCommand, authToken)
+                    CommandRequest.of(sharedCommand, context.authToken())
                 );
                 ByteBuffer lengthBuffer = ByteBuffer.allocate(Integer.BYTES);
                 ByteBuffer payloadBuffer = null;
@@ -122,7 +125,8 @@ public class ClientCommandInvoker {
                                 continue;
                             }
                             return unwrapResponse(
-                                TransportCodec.decode(payloadBuffer.array())
+                                TransportCodec.decode(payloadBuffer.array()),
+                                context
                             );
                         }
                     }
@@ -137,12 +141,15 @@ public class ClientCommandInvoker {
         );
     }
 
-    private String unwrapResponse(Object responseObject) {
+    private String unwrapResponse(Object responseObject, ClientContext context) {
         if (!(responseObject instanceof CommandResponse response)) {
             throw new IllegalStateException("Unsupported response type");
         }
         if (!response.success()) {
             throw new IllegalStateException(response.message());
+        }
+        if (response.login() != null && response.authToken() != null) {
+            context.authenticate(response.login(), response.authToken());
         }
         return response.message();
     }

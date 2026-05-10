@@ -27,10 +27,12 @@ public class RemoveKeyCommand extends SharedCommand {
      */
     @Override
     public String exec(SharedCommandContext context) throws Exception {
-        if (!context.collectionManager().containsKey(key)) {
+        if (!context.visibleCollection().containsKey(key)) {
             return "no element with key " + key + " exists in the collection";
         }
-        context.persistRemovedMovie(key);
+        if (!context.persistRemovedMovie(key)) {
+            return "element with key " + key + " belongs to another user";
+        }
         context.collectionManager().remove(key);
         return "removed element with key " + key;
     }

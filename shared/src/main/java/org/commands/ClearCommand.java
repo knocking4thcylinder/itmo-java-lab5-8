@@ -13,9 +13,8 @@ public class ClearCommand extends SharedCommand {
      */
     @Override
     public String exec(SharedCommandContext context) throws Exception {
-        int collectionLength = context.collectionManager().size();
-        context.persistClearedCollection();
-        context.collectionManager().clear();
-        return "collection cleared, removed " + collectionLength + " elements";
+        var removedKeys = context.persistClearedCollection();
+        removedKeys.forEach(context.collectionManager()::remove);
+        return "collection cleared, removed " + removedKeys.size() + " elements";
     }
 }

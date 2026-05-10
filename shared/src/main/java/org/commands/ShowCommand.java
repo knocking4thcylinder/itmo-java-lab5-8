@@ -13,7 +13,7 @@ public class ShowCommand extends SharedCommand {
     @Override
     public String exec(SharedCommandContext context) {
         return MovieOutputFormatter.format(
-            context.collectionManager().getCollection().values().stream()
+            context.visibleCollection().values().stream()
         );
     }
 }

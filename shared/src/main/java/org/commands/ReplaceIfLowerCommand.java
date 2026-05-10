@@ -33,18 +33,20 @@ public class ReplaceIfLowerCommand extends SharedCommand {
      */
     @Override
     public String exec(SharedCommandContext context) throws Exception {
-        var collection = context.collectionManager().getCollection();
-        if (!collection.containsKey(key)) {
+        var visibleCollection = context.visibleCollection();
+        if (!visibleCollection.containsKey(key)) {
             return "no element with key " + key + " exists in the collection";
         }
-        Movie existingMovie = collection.get(key);
+        Movie existingMovie = visibleCollection.get(key);
         if (movie.compareTo(existingMovie) < 0) {
             movie.restoreGeneratedFields(
                 existingMovie.getId(),
                 existingMovie.getCreationDate()
             );
-            context.persistUpdatedMovie(key, movie);
-            collection.put(key, movie);
+            if (!context.persistUpdatedMovie(key, movie)) {
+                return "element " + key + " belongs to another user";
+            }
+            context.collectionManager().put(key, movie);
             return "element " + key + " successfully updated";
         }
         return "element " + key + " was not replaced (new value is not lower)";

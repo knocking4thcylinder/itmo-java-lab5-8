@@ -33,8 +33,7 @@ public class UpdateCommand extends SharedCommand {
      */
     @Override
     public String exec(SharedCommandContext context) throws Exception {
-        var entryToUpdate = context.collectionManager()
-            .getCollection()
+        var entryToUpdate = context.visibleCollection()
             .entrySet()
             .stream()
             .filter(entry -> entry.getValue().getId() == id)
@@ -45,13 +44,20 @@ public class UpdateCommand extends SharedCommand {
         }
 
         Movie existingMovie = entryToUpdate.getValue();
+        Movie updatedMovie = movie;
+        updatedMovie.restoreGeneratedFields(
+            existingMovie.getId(),
+            existingMovie.getCreationDate()
+        );
+        if (!context.persistUpdatedMovie(entryToUpdate.getKey(), updatedMovie)) {
+            return "element " + entryToUpdate.getKey() + " belongs to another user";
+        }
         existingMovie.setName(movie.getName());
         existingMovie.setCoordinates(movie.getCoordinates());
         existingMovie.setOscarsCount(movie.getOscarsCount());
         existingMovie.setGenre(movie.getGenre());
         existingMovie.setMpaaRating(movie.getMpaaRating());
         existingMovie.setOperator(movie.getOperator());
-        context.persistUpdatedMovie(entryToUpdate.getKey(), existingMovie);
         return "element " + entryToUpdate.getKey() + " successfully updated";
     }
 }

@@ -30,16 +30,16 @@ public class RemoveGreaterKeyCommand extends SharedCommand {
     @Override
     public String exec(SharedCommandContext context) throws Exception {
         var collection = context.collectionManager().getCollection();
-        List<String> keysToRemove = collection
+        List<String> keysToRemove = context.visibleCollection()
             .keySet()
             .stream()
             .filter(k -> k.compareTo(key) > 0)
             .toList();
-        context.persistRemovedMovies(keysToRemove);
-        keysToRemove.forEach(collection::remove);
+        var removedKeys = context.persistRemovedMovies(keysToRemove);
+        removedKeys.forEach(collection::remove);
         return (
             "removed " +
-            keysToRemove.size() +
+            removedKeys.size() +
             " elements with keys greater than " +
             key
         );

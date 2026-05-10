@@ -30,8 +30,7 @@ public class FilterLessThanMpaaRatingCommand extends SharedCommand {
     @Override
     public String exec(SharedCommandContext context) {
         return MovieOutputFormatter.format(
-            context.collectionManager()
-                .getCollection()
+            context.visibleCollection()
                 .values()
                 .stream()
                 .filter(movie -> movie.getMpaaRating().compareTo(mpaaRating) < 0)

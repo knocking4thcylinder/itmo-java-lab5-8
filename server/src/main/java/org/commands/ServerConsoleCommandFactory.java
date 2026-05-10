@@ -7,18 +7,13 @@ import org.dataclasses.enums.MovieGenre;
 import org.dataclasses.enums.MpaaRating;
 
 /**
- * Фабрика для создания команд из пользовательского ввода.
+ * Creates commands available from the server console.
  */
-public class CommandFactory {
+public class ServerConsoleCommandFactory {
 
     private final InputParser inputParser;
 
-    /**
-     * Создает фабрику команд.
-     *
-     * @param inputParser парсер ввода для команд, которым нужен объект Movie
-     */
-    public CommandFactory(InputParser inputParser) {
+    public ServerConsoleCommandFactory(InputParser inputParser) {
         this.inputParser = Objects.requireNonNull(
             inputParser,
             "Input parser cannot be null"
@@ -26,18 +21,18 @@ public class CommandFactory {
     }
 
     /**
-     * Создает объект команды по имени и строковым аргументам.
+     * Creates a command from server-console input.
      *
-     * @param name имя команды
-     * @param args аргументы команды
-     * @return объект команды
-     * @throws Exception если команда не существует или аргументы некорректны
+     * @param name command name
+     * @param args command arguments
+     * @return server or shared command
+     * @throws Exception if command cannot be created
      */
     public Command create(String name, String... args) throws Exception {
         return switch (name) {
             case "help" -> {
                 requireArgCount(name, args, 0);
-                yield new HelpCommand();
+                yield new ServerHelpCommand();
             }
             case "info" -> {
                 requireArgCount(name, args, 0);
@@ -54,18 +49,6 @@ public class CommandFactory {
             case "update" -> {
                 requireArgCount(name, args, 1);
                 yield new UpdateCommand(parseId(args[0]), parseMovie());
-            }
-            case "exit" -> {
-                requireArgCount(name, args, 0);
-                yield new ExitCommand();
-            }
-            case "register" -> {
-                requireArgCount(name, args, 2);
-                yield new RegisterCommand(args[0], args[1]);
-            }
-            case "login" -> {
-                requireArgCount(name, args, 2);
-                yield new LoginCommand(args[0], args[1]);
             }
             case "clear" -> {
                 requireArgCount(name, args, 0);
@@ -95,10 +78,6 @@ public class CommandFactory {
                 requireArgCount(name, args, 1);
                 yield new FilterContainsNameCommand(args[0]);
             }
-            case "execute_script" -> {
-                requireArgCount(name, args, 1);
-                yield new ExecuteScriptCommand(args[0]);
-            }
             case "filter_less_than_mpaa_rating" -> {
                 requireArgCount(name, args, 1);
                 yield new FilterLessThanMpaaRatingCommand(
@@ -106,7 +85,7 @@ public class CommandFactory {
                 );
             }
             default -> throw new NoSuchObjectException(
-                "No command with name \"" + name + "\" exists"
+                "No server command with name \"" + name + "\" exists"
             );
         };
     }

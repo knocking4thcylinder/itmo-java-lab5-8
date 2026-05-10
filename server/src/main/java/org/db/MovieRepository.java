@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -33,26 +35,34 @@ public class MovieRepository {
     }
 
     public TreeMap<String, Movie> loadAll() throws SQLException {
+        return loadAllWithOwners().movies();
+    }
+
+    public LoadedMovies loadAllWithOwners() throws SQLException {
         TreeMap<String, Movie> movies = new TreeMap<>();
+        Map<String, String> ownersByKey = new TreeMap<>();
         try (
             Connection connection = connector.getConnection();
             PreparedStatement statement = connection.prepareStatement("""
-                SELECT key, id, name, coordinates_x, coordinates_y,
+                SELECT movies.collection_key, users.login AS owner_login,
+                       movies.id, movies.name, coordinates_x, coordinates_y,
                        creation_date, oscars_count, genre, mpaa_rating,
                        operator_name, operator_weight, operator_passport_id,
                        operator_nationality, operator_location_x,
                        operator_location_y, operator_location_name
                 FROM movies
-                ORDER BY key
+                JOIN users ON users.id = movies.owner_user_id
+                ORDER BY movies.collection_key
                 """);
             ResultSet resultSet = statement.executeQuery()
         ) {
             while (resultSet.next()) {
                 Map.Entry<String, Movie> entry = mapMovie(resultSet);
                 movies.put(entry.getKey(), entry.getValue());
+                ownersByKey.put(entry.getKey(), resultSet.getString("owner_login"));
             }
         }
-        return movies;
+        return new LoadedMovies(movies, ownersByKey);
     }
 
     public int insert(String key, String ownerLogin, Movie movie)
@@ -64,13 +74,17 @@ public class MovieRepository {
             Connection connection = connector.getConnection();
             PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO movies (
-                    key, owner_login, name, coordinates_x, coordinates_y,
+                    collection_key, owner_user_id, name, coordinates_x, coordinates_y,
                     creation_date, oscars_count, genre, mpaa_rating,
                     operator_name, operator_weight, operator_passport_id,
                     operator_nationality, operator_location_x,
                     operator_location_y, operator_location_name
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (
+                    ?,
+                    (SELECT id FROM users WHERE login = ?),
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )
                 RETURNING id
                 """)
         ) {
@@ -84,7 +98,8 @@ public class MovieRepository {
         }
     }
 
-    public boolean updateByKey(String key, Movie movie) throws SQLException {
+    public boolean updateByKey(String key, String ownerLogin, Movie movie)
+        throws SQLException {
         try (
             Connection connection = connector.getConnection();
             PreparedStatement statement = connection.prepareStatement("""
@@ -102,7 +117,8 @@ public class MovieRepository {
                     operator_location_x = ?,
                     operator_location_y = ?,
                     operator_location_name = ?
-                WHERE key = ?
+                WHERE collection_key = ?
+                  AND owner_user_id = (SELECT id FROM users WHERE login = ?)
                 """)
         ) {
             statement.setString(1, movie.getName());
@@ -110,59 +126,73 @@ public class MovieRepository {
             statement.setInt(3, movie.getCoordinates().getY());
             fillMutableMovieStatement(statement, movie, 4);
             statement.setString(14, key);
+            statement.setString(15, ownerLogin);
             return statement.executeUpdate() == 1;
         }
     }
 
-    public boolean removeByKey(String key) throws SQLException {
+    public boolean removeByKey(String key, String ownerLogin) throws SQLException {
         try (
             Connection connection = connector.getConnection();
             PreparedStatement statement = connection.prepareStatement("""
                 DELETE FROM movies
-                WHERE key = ?
+                WHERE collection_key = ?
+                  AND owner_user_id = (SELECT id FROM users WHERE login = ?)
                 """)
         ) {
             statement.setString(1, key);
+            statement.setString(2, ownerLogin);
             return statement.executeUpdate() == 1;
         }
     }
 
-    public int removeByKeys(Collection<String> keys) throws SQLException {
+    public List<String> removeByKeys(Collection<String> keys, String ownerLogin)
+        throws SQLException {
         if (keys.isEmpty()) {
-            return 0;
+            return List.of();
         }
 
         try (Connection connection = connector.getConnection()) {
-            int removedCount = 0;
+            List<String> removedKeys = new ArrayList<>();
             try (
                 PreparedStatement statement = connection.prepareStatement("""
                     DELETE FROM movies
-                    WHERE key = ?
+                    WHERE collection_key = ?
+                      AND owner_user_id = (SELECT id FROM users WHERE login = ?)
+                    RETURNING collection_key
                     """)
             ) {
                 for (String key : keys) {
                     statement.setString(1, key);
-                    statement.addBatch();
-                }
-                int[] results = statement.executeBatch();
-                for (int result : results) {
-                    if (result > 0) {
-                        removedCount += result;
+                    statement.setString(2, ownerLogin);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            removedKeys.add(resultSet.getString("collection_key"));
+                        }
                     }
                 }
             }
-            return removedCount;
+            return removedKeys;
         }
     }
 
-    public int clear() throws SQLException {
+    public List<String> clear(String ownerLogin) throws SQLException {
         try (
             Connection connection = connector.getConnection();
             PreparedStatement statement = connection.prepareStatement("""
                 DELETE FROM movies
+                WHERE owner_user_id = (SELECT id FROM users WHERE login = ?)
+                RETURNING collection_key
                 """)
         ) {
-            return statement.executeUpdate();
+            statement.setString(1, ownerLogin);
+            List<String> removedKeys = new ArrayList<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    removedKeys.add(resultSet.getString("collection_key"));
+                }
+            }
+            return removedKeys;
         }
     }
 
@@ -183,7 +213,7 @@ public class MovieRepository {
             resultSet.getInt("id"),
             resultSet.getTimestamp("creation_date").toLocalDateTime()
         );
-        return Map.entry(resultSet.getString("key"), movie);
+        return Map.entry(resultSet.getString("collection_key"), movie);
     }
 
     private Person mapOperator(ResultSet resultSet) throws SQLException {

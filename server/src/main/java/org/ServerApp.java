@@ -11,16 +11,27 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.auth.PasswordHasher;
 import org.auth.SessionManager;
+import org.commands.Command;
+import org.commands.InputParser;
+import org.commands.ScannerInputSource;
 import org.commands.ServerCommand;
+import org.commands.ServerConsoleCommandFactory;
 import org.commands.ServerContext;
 import org.commands.ServerCommandInvoker;
+import org.commands.SharedCommand;
 import org.db.DatabaseConnector;
+import org.db.LoadedMovies;
 import org.db.MovieRepository;
 import org.db.SchemaInitializer;
+import org.db.UserRepository;
 import org.shared.CommandRequest;
 import org.shared.CommandResponse;
 import org.shared.TransportCodec;
+import org.shared.AuthResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Scanner;
@@ -54,19 +65,37 @@ public class ServerApp {
 
         CollectionManager collectionManager = CollectionManager.getInstance();
         DatabaseConnector databaseConnector = new DatabaseConnector();
-        MovieRepository movieRepository = initializeDatabase(
+        MovieRepository movieRepository = new MovieRepository(databaseConnector);
+        Map<String, String> ownersByKey = initializeDatabase(
             databaseConnector,
-            collectionManager
+            collectionManager,
+            movieRepository
         );
+        UserRepository userRepository = new UserRepository(databaseConnector);
         SessionManager sessionManager = new SessionManager();
+        PasswordHasher passwordHasher = new PasswordHasher();
 
         ServerContext serverContext = new ServerContext(
             collectionManager,
             movieRepository,
+            userRepository,
+            sessionManager,
+            passwordHasher,
+            ownersByKey,
             INTERNAL_OWNER_LOGIN
         );
         ServerCommandInvoker commandInvoker = new ServerCommandInvoker();
-        startConsole(commandInvoker, serverContext);
+        ServerContext serverConsoleContext = new ServerContext(
+            collectionManager,
+            movieRepository,
+            userRepository,
+            sessionManager,
+            passwordHasher,
+            ownersByKey,
+            INTERNAL_OWNER_LOGIN,
+            false
+        );
+        startConsole(commandInvoker, serverConsoleContext);
 
         try (
             Selector selector = Selector.open();
@@ -104,9 +133,10 @@ public class ServerApp {
         }
     }
 
-    private static MovieRepository initializeDatabase(
+    private static Map<String, String> initializeDatabase(
         DatabaseConnector databaseConnector,
-        CollectionManager collectionManager
+        CollectionManager collectionManager,
+        MovieRepository movieRepository
     ) {
         try {
             LOGGER.info("Initializing database schema");
@@ -115,14 +145,14 @@ public class ServerApp {
                 INTERNAL_OWNER_LOGIN,
                 ""
             );
-            MovieRepository movieRepository = new MovieRepository(databaseConnector);
             LOGGER.info("Loading collection from database");
-            collectionManager.setCollection(movieRepository.loadAll());
+            LoadedMovies loadedMovies = movieRepository.loadAllWithOwners();
+            collectionManager.setCollection(loadedMovies.movies());
             LOGGER.info(
                 "Loaded {} movies from database",
                 collectionManager.size()
             );
-            return movieRepository;
+            return new ConcurrentHashMap<>(loadedMovies.ownersByKey());
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize database", e);
         }
@@ -165,6 +195,12 @@ public class ServerApp {
                         request.command().getClass().getSimpleName(),
                         describeChannel(clientChannel)
                     );
+                    if (
+                        request.command().requiresAuthentication() &&
+                        sessionManager.findLogin(request.authToken()).isEmpty()
+                    ) {
+                        throw new IllegalStateException("authentication required");
+                    }
                     ServerContext requestContext = contextForRequest(
                         request,
                         baseServerContext,
@@ -179,7 +215,7 @@ public class ServerApp {
                         request.command().getClass().getSimpleName(),
                         describeChannel(clientChannel)
                     );
-                    response = CommandResponse.success(result);
+                    response = successResponse(result, requestContext);
                 } catch (Exception e) {
                     LOGGER.warn(
                         "Command {} from {} failed: {}",
@@ -217,7 +253,26 @@ public class ServerApp {
         return new ServerContext(
             baseServerContext.collectionManager(),
             baseServerContext.movieRepository(),
+            baseServerContext.userRepository(),
+            baseServerContext.sessionManager(),
+            baseServerContext.passwordHasher(),
+            baseServerContext.ownersByKey(),
             ownerLogin
+        );
+    }
+
+    private static CommandResponse successResponse(
+        String message,
+        ServerContext requestContext
+    ) {
+        AuthResult authResult = requestContext.latestAuthResult();
+        if (authResult == null) {
+            return CommandResponse.success(message);
+        }
+        return CommandResponse.authenticated(
+            message,
+            authResult.login(),
+            authResult.authToken()
         );
     }
 
@@ -249,10 +304,13 @@ public class ServerApp {
         ServerContext serverContext
     ) {
         Thread consoleThread = new Thread(() -> {
-            Scanner scanner = new Scanner(System.in);
+            InputParser inputParser = new InputParser(
+                new ScannerInputSource(System.in)
+            );
+            ServerConsoleCommandFactory commandFactory =
+                new ServerConsoleCommandFactory(inputParser);
             System.out.print("server> ");
-            while (scanner.hasNextLine()) {
-                String[] commandLine = scanner.nextLine().trim().split(" ");
+            for (String[] commandLine : inputParser) {
                 if (commandLine.length == 0 || commandLine[0].isEmpty()) {
                     System.out.print("server> ");
                     continue;
@@ -262,8 +320,24 @@ public class ServerApp {
                         LOGGER.info("Server shutdown requested from console");
                         System.exit(0);
                     }
-                    ServerCommand serverCommand = createServerCommand(commandLine);
-                    String result = commandInvoker.invoke(serverCommand, serverContext);
+                    Command command = commandFactory.create(
+                        commandLine[0],
+                        java.util.Arrays.copyOfRange(
+                            commandLine,
+                            1,
+                            commandLine.length
+                        )
+                    );
+                    String result;
+                    if (command instanceof ServerCommand serverCommand) {
+                        result = commandInvoker.invoke(serverCommand, serverContext);
+                    } else if (command instanceof SharedCommand sharedCommand) {
+                        result = commandInvoker.invoke(sharedCommand, serverContext);
+                    } else {
+                        throw new IllegalStateException(
+                            "Unsupported server console command type"
+                        );
+                    }
                     if (result != null && !result.isEmpty()) {
                         System.out.println(result);
                     }
@@ -275,32 +349,6 @@ public class ServerApp {
         }, "server-console");
         consoleThread.setDaemon(true);
         consoleThread.start();
-    }
-
-    private static ServerCommand createServerCommand(String[] commandLine) {
-        return switch (commandLine[0]) {
-            case "help" -> {
-                requireArgCount(commandLine, 0);
-                yield new org.commands.ServerHelpCommand();
-            }
-            default -> throw new IllegalArgumentException(
-                "No server command with name \"" + commandLine[0] + "\" exists"
-            );
-        };
-    }
-
-    private static void requireArgCount(String[] commandLine, int count) {
-        int actualCount = commandLine.length - 1;
-        if (actualCount != count) {
-            throw new IllegalArgumentException(
-                "command \"" +
-                commandLine[0] +
-                "\" accepts exactly " +
-                count +
-                " argument" +
-                (count == 1 ? "" : "s")
-            );
-        }
     }
 
     private static String describeChannel(SocketChannel channel) {

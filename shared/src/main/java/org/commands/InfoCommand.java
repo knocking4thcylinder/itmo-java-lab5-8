@@ -18,6 +18,7 @@ public class InfoCommand extends SharedCommand {
     @Override
     public String exec(SharedCommandContext context) {
         CollectionManager cm = context.collectionManager();
+        var visibleCollection = context.visibleCollection();
         StringBuilder sb = new StringBuilder();
         sb
             .append("Collection type: ")
@@ -27,17 +28,15 @@ public class InfoCommand extends SharedCommand {
             .append("Initialization date: ")
             .append(cm.getInitializationDate())
             .append("\n");
-        sb.append("Number of elements: ").append(cm.size());
-        if (!cm.isEmpty()) {
-            LocalDateTime oldestCreationDate = cm
-                .getCollection()
+        sb.append("Number of elements: ").append(visibleCollection.size());
+        if (!visibleCollection.isEmpty()) {
+            LocalDateTime oldestCreationDate = visibleCollection
                 .values()
                 .stream()
                 .map(Movie::getCreationDate)
                 .min(Comparator.naturalOrder())
                 .orElseThrow();
-            LocalDateTime newestCreationDate = cm
-                .getCollection()
+            LocalDateTime newestCreationDate = visibleCollection
                 .values()
                 .stream()
                 .map(Movie::getCreationDate)

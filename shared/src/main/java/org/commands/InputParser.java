@@ -94,13 +94,6 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         return instance;
     }
 
-    /**
-     * Парсит отдельное поле объекта.
-     * @param instance объект, которому принадлежит поле
-     * @param setterName имя сеттера для поля
-     * @param fieldType тип поля
-     * @throws Exception при ошибке парсинга
-     */
     private void parseField(
         Object instance,
         String setterName,
@@ -168,7 +161,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         } else if (fieldType.isEnum()) {
             System.out.print(", possible values for this field: ");
             Object[] enumConstants = fieldType.getEnumConstants();
-            ArrayList<String> enumConstantNames = new ArrayList<String>();
+            ArrayList<String> enumConstantNames = new ArrayList<>();
             for (Object constant : enumConstants) {
                 Enum<?> value = (Enum<?>) constant;
                 enumConstantNames.add(value.name());
@@ -199,14 +192,8 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
         System.out.println(
             " - this is an object, you will be prompted to insert its fields now"
         );
-        Object tmpObject;
-        try {
-            tmpObject = fieldType.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            throw e;
-        }
+        Object tmpObject = fieldType.getDeclaredConstructor().newInstance();
         parseObject(tmpObject);
-        result = tmpObject;
         setterMethod.invoke(instance, tmpObject);
     }
 
@@ -215,7 +202,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
      * @return итератор массивов строк (команд)
      */
     public Iterator<String[]> iterator() {
-        return new Iterator<String[]>() {
+        return new Iterator<>() {
             public boolean hasNext() {
                 return inputSource.hasNextLine();
             }

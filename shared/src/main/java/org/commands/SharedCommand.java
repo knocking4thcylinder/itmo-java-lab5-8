@@ -9,4 +9,13 @@ public abstract class SharedCommand
     implements Command, ExecutableWithContext<SharedCommandContext>, Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * Returns whether this command requires an authenticated request.
+     *
+     * @return true if authentication is required
+     */
+    public boolean requiresAuthentication() {
+        return true;
+    }
 }
