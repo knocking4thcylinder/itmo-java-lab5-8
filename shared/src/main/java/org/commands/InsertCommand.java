@@ -32,9 +32,12 @@ public class InsertCommand extends SharedCommand {
      * @return результат выполнения
      */
     @Override
-    public String exec(SharedCommandContext context) {
+    public String exec(SharedCommandContext context) throws Exception {
         var collection = context.collectionManager().getCollection();
-        movie.assignGeneratedFields();
+        context.persistInsertedMovie(key, movie);
+        if (movie.getCreationDate() == null) {
+            movie.assignGeneratedFields();
+        }
         collection.put(key, movie);
         return "element " + key + " successfully inserted";
     }

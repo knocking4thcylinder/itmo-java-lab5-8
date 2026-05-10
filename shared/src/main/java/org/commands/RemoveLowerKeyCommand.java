@@ -1,5 +1,7 @@
 package org.commands;
 
+import java.util.List;
+
 /**
  * Команда для удаления элементов с ключом меньше заданного.
  */
@@ -26,16 +28,17 @@ public class RemoveLowerKeyCommand extends SharedCommand {
      * @return результат выполнения
      */
     @Override
-    public String exec(SharedCommandContext context) {
+    public String exec(SharedCommandContext context) throws Exception {
         var collection = context.collectionManager().getCollection();
-        long removedCount = collection
+        List<String> keysToRemove = collection
             .keySet()
             .stream()
             .filter(k -> k.compareTo(key) < 0)
-            .count();
-        collection.entrySet().removeIf(entry -> entry.getKey().compareTo(key) < 0);
+            .toList();
+        context.persistRemovedMovies(keysToRemove);
+        keysToRemove.forEach(collection::remove);
         return (
-            "removed " + removedCount + " elements with keys less than " + key
+            "removed " + keysToRemove.size() + " elements with keys less than " + key
         );
     }
 }

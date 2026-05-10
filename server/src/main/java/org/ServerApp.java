@@ -29,6 +29,7 @@ import java.util.Scanner;
  */
 public class ServerApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerApp.class);
+    private static final String INTERNAL_OWNER_LOGIN = "__server__";
 
     /**
      * Точка входа серверного приложения.
@@ -52,9 +53,16 @@ public class ServerApp {
 
         CollectionManager collectionManager = CollectionManager.getInstance();
         DatabaseConnector databaseConnector = new DatabaseConnector();
-        initializeDatabase(databaseConnector, collectionManager);
+        MovieRepository movieRepository = initializeDatabase(
+            databaseConnector,
+            collectionManager
+        );
 
-        ServerContext serverContext = new ServerContext(collectionManager);
+        ServerContext serverContext = new ServerContext(
+            collectionManager,
+            movieRepository,
+            INTERNAL_OWNER_LOGIN
+        );
         ServerCommandInvoker commandInvoker = new ServerCommandInvoker();
         startConsole(commandInvoker, serverContext);
 
@@ -89,21 +97,25 @@ public class ServerApp {
         }
     }
 
-    private static void initializeDatabase(
+    private static MovieRepository initializeDatabase(
         DatabaseConnector databaseConnector,
         CollectionManager collectionManager
     ) {
         try {
             LOGGER.info("Initializing database schema");
             new SchemaInitializer(databaseConnector).initialize();
-            LOGGER.info("Loading collection from database");
-            collectionManager.setCollection(
-                new MovieRepository(databaseConnector).loadAll()
+            new org.db.UserRepository(databaseConnector).create(
+                INTERNAL_OWNER_LOGIN,
+                ""
             );
+            MovieRepository movieRepository = new MovieRepository(databaseConnector);
+            LOGGER.info("Loading collection from database");
+            collectionManager.setCollection(movieRepository.loadAll());
             LOGGER.info(
                 "Loaded {} movies from database",
                 collectionManager.size()
             );
+            return movieRepository;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize database", e);
         }

@@ -32,23 +32,26 @@ public class UpdateCommand extends SharedCommand {
      * @return результат выполнения
      */
     @Override
-    public String exec(SharedCommandContext context) {
-        return context.collectionManager()
+    public String exec(SharedCommandContext context) throws Exception {
+        var entryToUpdate = context.collectionManager()
             .getCollection()
             .entrySet()
             .stream()
             .filter(entry -> entry.getValue().getId() == id)
             .findFirst()
-            .map(entry -> {
-                Movie existingMovie = entry.getValue();
-                existingMovie.setName(movie.getName());
-                existingMovie.setCoordinates(movie.getCoordinates());
-                existingMovie.setOscarsCount(movie.getOscarsCount());
-                existingMovie.setGenre(movie.getGenre());
-                existingMovie.setMpaaRating(movie.getMpaaRating());
-                existingMovie.setOperator(movie.getOperator());
-                return "element " + entry.getKey() + " successfully updated";
-            })
-            .orElse("No element with that id exists");
+            .orElse(null);
+        if (entryToUpdate == null) {
+            return "No element with that id exists";
+        }
+
+        Movie existingMovie = entryToUpdate.getValue();
+        existingMovie.setName(movie.getName());
+        existingMovie.setCoordinates(movie.getCoordinates());
+        existingMovie.setOscarsCount(movie.getOscarsCount());
+        existingMovie.setGenre(movie.getGenre());
+        existingMovie.setMpaaRating(movie.getMpaaRating());
+        existingMovie.setOperator(movie.getOperator());
+        context.persistUpdatedMovie(entryToUpdate.getKey(), existingMovie);
+        return "element " + entryToUpdate.getKey() + " successfully updated";
     }
 }

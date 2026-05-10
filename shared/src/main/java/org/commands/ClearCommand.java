@@ -1,7 +1,5 @@
 package org.commands;
 
-import org.CollectionManager;
-
 /**
  * Команда для очистки коллекции.
  */
@@ -14,8 +12,9 @@ public class ClearCommand extends SharedCommand {
      * @return результат выполнения
      */
     @Override
-    public String exec(SharedCommandContext context) {
+    public String exec(SharedCommandContext context) throws Exception {
         int collectionLength = context.collectionManager().size();
+        context.persistClearedCollection();
         context.collectionManager().clear();
         return "collection cleared, removed " + collectionLength + " elements";
     }

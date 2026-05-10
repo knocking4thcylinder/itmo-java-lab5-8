@@ -1,5 +1,7 @@
 package org.commands;
 
+import java.util.List;
+
 /**
  * Команда для удаления элементов с ключом больше заданного.
  */
@@ -26,17 +28,18 @@ public class RemoveGreaterKeyCommand extends SharedCommand {
      * @return результат выполнения
      */
     @Override
-    public String exec(SharedCommandContext context) {
+    public String exec(SharedCommandContext context) throws Exception {
         var collection = context.collectionManager().getCollection();
-        long removedCount = collection
+        List<String> keysToRemove = collection
             .keySet()
             .stream()
             .filter(k -> k.compareTo(key) > 0)
-            .count();
-        collection.entrySet().removeIf(entry -> entry.getKey().compareTo(key) > 0);
+            .toList();
+        context.persistRemovedMovies(keysToRemove);
+        keysToRemove.forEach(collection::remove);
         return (
             "removed " +
-            removedCount +
+            keysToRemove.size() +
             " elements with keys greater than " +
             key
         );

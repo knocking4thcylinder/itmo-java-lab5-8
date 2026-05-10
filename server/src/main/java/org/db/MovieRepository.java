@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -83,6 +84,88 @@ public class MovieRepository {
         }
     }
 
+    public boolean updateByKey(String key, Movie movie) throws SQLException {
+        try (
+            Connection connection = connector.getConnection();
+            PreparedStatement statement = connection.prepareStatement("""
+                UPDATE movies
+                SET name = ?,
+                    coordinates_x = ?,
+                    coordinates_y = ?,
+                    oscars_count = ?,
+                    genre = ?,
+                    mpaa_rating = ?,
+                    operator_name = ?,
+                    operator_weight = ?,
+                    operator_passport_id = ?,
+                    operator_nationality = ?,
+                    operator_location_x = ?,
+                    operator_location_y = ?,
+                    operator_location_name = ?
+                WHERE key = ?
+                """)
+        ) {
+            statement.setString(1, movie.getName());
+            statement.setInt(2, movie.getCoordinates().getX());
+            statement.setInt(3, movie.getCoordinates().getY());
+            fillMutableMovieStatement(statement, movie, 4);
+            statement.setString(14, key);
+            return statement.executeUpdate() == 1;
+        }
+    }
+
+    public boolean removeByKey(String key) throws SQLException {
+        try (
+            Connection connection = connector.getConnection();
+            PreparedStatement statement = connection.prepareStatement("""
+                DELETE FROM movies
+                WHERE key = ?
+                """)
+        ) {
+            statement.setString(1, key);
+            return statement.executeUpdate() == 1;
+        }
+    }
+
+    public int removeByKeys(Collection<String> keys) throws SQLException {
+        if (keys.isEmpty()) {
+            return 0;
+        }
+
+        try (Connection connection = connector.getConnection()) {
+            int removedCount = 0;
+            try (
+                PreparedStatement statement = connection.prepareStatement("""
+                    DELETE FROM movies
+                    WHERE key = ?
+                    """)
+            ) {
+                for (String key : keys) {
+                    statement.setString(1, key);
+                    statement.addBatch();
+                }
+                int[] results = statement.executeBatch();
+                for (int result : results) {
+                    if (result > 0) {
+                        removedCount += result;
+                    }
+                }
+            }
+            return removedCount;
+        }
+    }
+
+    public int clear() throws SQLException {
+        try (
+            Connection connection = connector.getConnection();
+            PreparedStatement statement = connection.prepareStatement("""
+                DELETE FROM movies
+                """)
+        ) {
+            return statement.executeUpdate();
+        }
+    }
+
     private Map.Entry<String, Movie> mapMovie(ResultSet resultSet)
         throws SQLException {
         Movie movie = new Movie(
@@ -142,32 +225,40 @@ public class MovieRepository {
         statement.setInt(4, movie.getCoordinates().getX());
         statement.setInt(5, movie.getCoordinates().getY());
         statement.setTimestamp(6, Timestamp.valueOf(creationDate));
-        statement.setInt(7, movie.getOscarsCount());
-        statement.setString(8, movie.getGenre().name());
-        statement.setString(9, movie.getMpaaRating().name());
+        fillMutableMovieStatement(statement, movie, 7);
+    }
+
+    private void fillMutableMovieStatement(
+        PreparedStatement statement,
+        Movie movie,
+        int startIndex
+    ) throws SQLException {
+        statement.setInt(startIndex, movie.getOscarsCount());
+        statement.setString(startIndex + 1, movie.getGenre().name());
+        statement.setString(startIndex + 2, movie.getMpaaRating().name());
 
         Person operator = movie.getOperator();
         if (operator == null) {
-            for (int i = 10; i <= 16; i++) {
+            for (int i = startIndex + 3; i <= startIndex + 9; i++) {
                 statement.setObject(i, null);
             }
             return;
         }
 
-        statement.setString(10, operator.getName());
-        statement.setDouble(11, operator.getWeight());
-        statement.setString(12, operator.getPassportID());
-        statement.setString(13, operator.getNationality().name());
+        statement.setString(startIndex + 3, operator.getName());
+        statement.setDouble(startIndex + 4, operator.getWeight());
+        statement.setString(startIndex + 5, operator.getPassportID());
+        statement.setString(startIndex + 6, operator.getNationality().name());
 
         Location location = operator.getLocation();
         if (location == null) {
-            statement.setObject(14, null);
-            statement.setObject(15, null);
-            statement.setString(16, null);
+            statement.setObject(startIndex + 7, null);
+            statement.setObject(startIndex + 8, null);
+            statement.setString(startIndex + 9, null);
         } else {
-            statement.setLong(14, location.getX());
-            statement.setDouble(15, location.getY());
-            statement.setString(16, location.getName());
+            statement.setLong(startIndex + 7, location.getX());
+            statement.setDouble(startIndex + 8, location.getY());
+            statement.setString(startIndex + 9, location.getName());
         }
     }
 
