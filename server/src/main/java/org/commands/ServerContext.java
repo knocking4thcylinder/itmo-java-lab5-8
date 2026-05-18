@@ -3,10 +3,8 @@ package org.commands;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import org.CollectionManager;
 import org.auth.PasswordHasher;
-import org.auth.SessionManager;
 import org.dataclasses.Movie;
 import org.db.MovieRepository;
 import org.db.UserRepository;
@@ -20,11 +18,9 @@ public class ServerContext implements SharedCommandContext {
     private final CollectionManager collectionManager;
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
-    private final SessionManager sessionManager;
     private final PasswordHasher passwordHasher;
     private final Map<String, String> ownersByKey;
     private final String ownerLogin;
-    private final boolean restrictVisibilityToOwner;
     private AuthResult latestAuthResult;
 
     /**
@@ -33,7 +29,6 @@ public class ServerContext implements SharedCommandContext {
      * @param collectionManager менеджер коллекции
      * @param movieRepository репозиторий фильмов
      * @param userRepository репозиторий пользователей
-     * @param sessionManager менеджер сессий
      * @param passwordHasher хешер паролей
      * @param ownersByKey владельцы элементов по ключам
      * @param ownerLogin логин владельца для команд без авторизации
@@ -42,32 +37,9 @@ public class ServerContext implements SharedCommandContext {
         CollectionManager collectionManager,
         MovieRepository movieRepository,
         UserRepository userRepository,
-        SessionManager sessionManager,
         PasswordHasher passwordHasher,
         Map<String, String> ownersByKey,
         String ownerLogin
-    ) {
-        this(
-            collectionManager,
-            movieRepository,
-            userRepository,
-            sessionManager,
-            passwordHasher,
-            ownersByKey,
-            ownerLogin,
-            true
-        );
-    }
-
-    public ServerContext(
-        CollectionManager collectionManager,
-        MovieRepository movieRepository,
-        UserRepository userRepository,
-        SessionManager sessionManager,
-        PasswordHasher passwordHasher,
-        Map<String, String> ownersByKey,
-        String ownerLogin,
-        boolean restrictVisibilityToOwner
     ) {
         this.collectionManager = Objects.requireNonNull(
             collectionManager,
@@ -81,10 +53,6 @@ public class ServerContext implements SharedCommandContext {
             userRepository,
             "User repository cannot be null"
         );
-        this.sessionManager = Objects.requireNonNull(
-            sessionManager,
-            "Session manager cannot be null"
-        );
         this.passwordHasher = Objects.requireNonNull(
             passwordHasher,
             "Password hasher cannot be null"
@@ -97,7 +65,6 @@ public class ServerContext implements SharedCommandContext {
             ownerLogin,
             "Owner login cannot be null"
         );
-        this.restrictVisibilityToOwner = restrictVisibilityToOwner;
     }
 
     /**
@@ -120,16 +87,7 @@ public class ServerContext implements SharedCommandContext {
 
     @Override
     public Map<String, Movie> visibleCollection() {
-        if (!restrictVisibilityToOwner) {
-            return collectionManager.getCollection();
-        }
-        TreeMap<String, Movie> visibleMovies = new TreeMap<>();
-        collectionManager.getCollection()
-            .entrySet()
-            .stream()
-            .filter(entry -> ownerLogin.equals(ownersByKey.get(entry.getKey())))
-            .forEach(entry -> visibleMovies.put(entry.getKey(), entry.getValue()));
-        return visibleMovies;
+        return collectionManager.getCollection();
     }
 
     /**
@@ -148,15 +106,6 @@ public class ServerContext implements SharedCommandContext {
      */
     public UserRepository userRepository() {
         return userRepository;
-    }
-
-    /**
-     * Возвращает менеджер сессий.
-     *
-     * @return менеджер сессий
-     */
-    public SessionManager sessionManager() {
-        return sessionManager;
     }
 
     /**
@@ -223,10 +172,7 @@ public class ServerContext implements SharedCommandContext {
                 "user with login \"" + login + "\" already exists"
             );
         }
-        latestAuthResult = new AuthResult(
-            login,
-            sessionManager.createSession(login)
-        );
+        latestAuthResult = new AuthResult(login);
         return latestAuthResult;
     }
 
@@ -237,10 +183,7 @@ public class ServerContext implements SharedCommandContext {
         if (!passwordHasher.verify(password, storedHash)) {
             throw new IllegalArgumentException("invalid login or password");
         }
-        latestAuthResult = new AuthResult(
-            login,
-            sessionManager.createSession(login)
-        );
+        latestAuthResult = new AuthResult(login);
         return latestAuthResult;
     }
 

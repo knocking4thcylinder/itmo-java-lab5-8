@@ -3,23 +3,24 @@ package org;
 import org.dataclasses.Movie;
 
 import java.time.LocalDateTime;
-import java.util.TreeMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Менеджер коллекции фильмов.
- * Реализует паттерн Singleton для управления коллекцией TreeMap.
+ * Реализует паттерн Singleton для управления потокобезопасной коллекцией.
  */
 public class CollectionManager {
 
     private static CollectionManager instance;
-    private TreeMap<String, Movie> collection;
+    private ConcurrentSkipListMap<String, Movie> collection;
     private LocalDateTime initializationDate;
 
     /**
      * Приватный конструктор для реализации Singleton.
      */
     private CollectionManager() {
-        this.collection = new TreeMap<>();
+        this.collection = new ConcurrentSkipListMap<>();
         this.initializationDate = LocalDateTime.now();
     }
 
@@ -44,9 +45,9 @@ public class CollectionManager {
 
     /**
      * Возвращает коллекцию фильмов.
-     * @return TreeMap с фильмами
+     * @return потокобезопасная коллекция с фильмами
      */
-    public TreeMap<String, Movie> getCollection() {
+    public ConcurrentSkipListMap<String, Movie> getCollection() {
         return collection;
     }
 
@@ -54,8 +55,8 @@ public class CollectionManager {
      * Устанавливает коллекцию фильмов.
      * @param collection коллекция для установки
      */
-    public void setCollection(TreeMap<String, Movie> collection) {
-        this.collection = collection;
+    public void setCollection(Map<String, Movie> collection) {
+        this.collection = new ConcurrentSkipListMap<>(collection);
     }
 
     /**

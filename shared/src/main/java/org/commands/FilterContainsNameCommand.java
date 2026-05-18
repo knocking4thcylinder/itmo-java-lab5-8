@@ -37,4 +37,9 @@ public class FilterContainsNameCommand extends SharedCommand {
                 .filter(movie -> movie.getName().contains(namePart))
         );
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

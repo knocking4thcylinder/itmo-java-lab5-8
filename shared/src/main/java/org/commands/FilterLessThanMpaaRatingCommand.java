@@ -36,4 +36,9 @@ public class FilterLessThanMpaaRatingCommand extends SharedCommand {
                 .filter(movie -> movie.getMpaaRating().compareTo(mpaaRating) < 0)
         );
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

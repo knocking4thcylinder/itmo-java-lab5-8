@@ -6,15 +6,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.Channels;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 import org.auth.PasswordHasher;
-import org.auth.SessionManager;
 import org.commands.Command;
 import org.commands.InputParser;
 import org.commands.ScannerInputSource;
@@ -34,7 +31,6 @@ import org.shared.TransportCodec;
 import org.shared.AuthResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Scanner;
 
 /**
  * Серверное приложение для выполнения команд над коллекцией.
@@ -66,20 +62,19 @@ public class ServerApp {
         CollectionManager collectionManager = CollectionManager.getInstance();
         DatabaseConnector databaseConnector = new DatabaseConnector();
         MovieRepository movieRepository = new MovieRepository(databaseConnector);
+        PasswordHasher passwordHasher = new PasswordHasher();
         Map<String, String> ownersByKey = initializeDatabase(
             databaseConnector,
             collectionManager,
-            movieRepository
+            movieRepository,
+            passwordHasher
         );
         UserRepository userRepository = new UserRepository(databaseConnector);
-        SessionManager sessionManager = new SessionManager();
-        PasswordHasher passwordHasher = new PasswordHasher();
 
         ServerContext serverContext = new ServerContext(
             collectionManager,
             movieRepository,
             userRepository,
-            sessionManager,
             passwordHasher,
             ownersByKey,
             INTERNAL_OWNER_LOGIN
@@ -89,44 +84,31 @@ public class ServerApp {
             collectionManager,
             movieRepository,
             userRepository,
-            sessionManager,
             passwordHasher,
             ownersByKey,
-            INTERNAL_OWNER_LOGIN,
-            false
+            INTERNAL_OWNER_LOGIN
         );
         startConsole(commandInvoker, serverConsoleContext);
 
         try (
-            Selector selector = Selector.open();
-            ServerSocketChannel serverChannel = ServerSocketChannel.open()
+            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            ForkJoinPool responsePool = new ForkJoinPool()
         ) {
             serverChannel.bind(new InetSocketAddress(port));
-            serverChannel.configureBlocking(false);
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+            serverChannel.configureBlocking(true);
             LOGGER.info("Server started on port {}", port);
             while (true) {
-                selector.select();
-                Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-                while (keyIterator.hasNext()) {
-                    SelectionKey key = keyIterator.next();
-                    keyIterator.remove();
-                    if (!key.isValid()) {
-                        continue;
-                    }
-                    if (key.isAcceptable()) {
-                        acceptClients(serverChannel, selector);
-                    } else if (key.isReadable()) {
-                        SocketChannel clientChannel = (SocketChannel) key.channel();
-                        key.cancel();
-                        handleClient(
-                            clientChannel,
-                            commandInvoker,
-                            serverContext,
-                            sessionManager
-                        );
-                    }
-                }
+                SocketChannel clientChannel = serverChannel.accept();
+                LOGGER.info("Accepted connection from {}", describeChannel(clientChannel));
+                new Thread(
+                    () -> readClientRequest(
+                        clientChannel,
+                        commandInvoker,
+                        serverContext,
+                        responsePool
+                    ),
+                    "server-request-reader"
+                ).start();
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start server", e);
@@ -136,14 +118,15 @@ public class ServerApp {
     private static Map<String, String> initializeDatabase(
         DatabaseConnector databaseConnector,
         CollectionManager collectionManager,
-        MovieRepository movieRepository
+        MovieRepository movieRepository,
+        PasswordHasher passwordHasher
     ) {
         try {
             LOGGER.info("Initializing database schema");
             new SchemaInitializer(databaseConnector).initialize();
             new org.db.UserRepository(databaseConnector).create(
                 INTERNAL_OWNER_LOGIN,
-                ""
+                passwordHasher.hash("")
             );
             LOGGER.info("Loading collection from database");
             LoadedMovies loadedMovies = movieRepository.loadAllWithOwners();
@@ -158,76 +141,28 @@ public class ServerApp {
         }
     }
 
-    private static void acceptClients(
-        ServerSocketChannel serverChannel,
-        Selector selector
-    ) throws IOException {
-        SocketChannel clientChannel;
-        while ((clientChannel = serverChannel.accept()) != null) {
-            LOGGER.info("Accepted connection from {}", describeChannel(clientChannel));
-            clientChannel.configureBlocking(false);
-            clientChannel.register(selector, SelectionKey.OP_READ);
-        }
-    }
-
-    private static void handleClient(
+    private static void readClientRequest(
         SocketChannel clientChannel,
         ServerCommandInvoker commandInvoker,
         ServerContext baseServerContext,
-        SessionManager sessionManager
+        ForkJoinPool responsePool
     ) {
         try (clientChannel) {
             clientChannel.configureBlocking(true);
             LOGGER.info("Started handling {}", describeChannel(clientChannel));
             Object requestObject = TransportCodec.decode(readPayload(clientChannel));
-            CommandResponse response;
-            if (!(requestObject instanceof CommandRequest request)) {
-                LOGGER.warn(
-                    "Received unsupported request type from {}: {}",
-                    describeChannel(clientChannel),
-                    requestObject.getClass().getName()
-                );
-                response = CommandResponse.failure("Unsupported request type");
-            } else {
-                try {
-                    LOGGER.info(
-                        "Executing {} from {}",
-                        request.command().getClass().getSimpleName(),
-                        describeChannel(clientChannel)
-                    );
-                    if (
-                        request.command().requiresAuthentication() &&
-                        sessionManager.findLogin(request.authToken()).isEmpty()
-                    ) {
-                        throw new IllegalStateException("authentication required");
-                    }
-                    ServerContext requestContext = contextForRequest(
-                        request,
-                        baseServerContext,
-                        sessionManager
-                    );
-                    String result = commandInvoker.invoke(
-                        request.command(),
-                        requestContext
-                    );
-                    LOGGER.info(
-                        "Completed {} from {} with success",
-                        request.command().getClass().getSimpleName(),
-                        describeChannel(clientChannel)
-                    );
-                    response = successResponse(result, requestContext);
-                } catch (Exception e) {
-                    LOGGER.warn(
-                        "Command {} from {} failed: {}",
-                        request.command().getClass().getSimpleName(),
-                        describeChannel(clientChannel),
-                        e.getMessage()
-                    );
-                    response = CommandResponse.failure(e.getMessage());
-                }
-            }
-            writeResponse(clientChannel, response);
-            LOGGER.info("Sent response to {}", describeChannel(clientChannel));
+            Thread processingThread = new Thread(
+                () -> processRequestAndRespond(
+                    requestObject,
+                    clientChannel,
+                    commandInvoker,
+                    baseServerContext,
+                    responsePool
+                ),
+                "server-request-processor"
+            );
+            processingThread.start();
+            processingThread.join();
         } catch (EOFException ignored) {
             LOGGER.warn(
                 "Client {} closed the connection before sending a full request",
@@ -242,23 +177,96 @@ public class ServerApp {
         }
     }
 
+    private static void processRequestAndRespond(
+        Object requestObject,
+        SocketChannel clientChannel,
+        ServerCommandInvoker commandInvoker,
+        ServerContext baseServerContext,
+        ForkJoinPool responsePool
+    ) {
+        CommandResponse response;
+        if (!(requestObject instanceof CommandRequest request)) {
+            LOGGER.warn(
+                "Received unsupported request type from {}: {}",
+                describeChannel(clientChannel),
+                requestObject.getClass().getName()
+            );
+            response = CommandResponse.failure("Unsupported request type");
+        } else {
+            try {
+                LOGGER.info(
+                    "Executing {} from {}",
+                    request.command().getClass().getSimpleName(),
+                    describeChannel(clientChannel)
+                );
+                if (request.command().requiresAuthentication()) {
+                    validateRequestCredentials(request, baseServerContext);
+                }
+                ServerContext requestContext = contextForRequest(
+                    request,
+                    baseServerContext
+                );
+                String result = commandInvoker.invoke(
+                    request.command(),
+                    requestContext
+                );
+                LOGGER.info(
+                    "Completed {} from {} with success",
+                    request.command().getClass().getSimpleName(),
+                    describeChannel(clientChannel)
+                );
+                response = successResponse(result, requestContext);
+            } catch (Exception e) {
+                LOGGER.warn(
+                    "Command {} from {} failed: {}",
+                    request.command().getClass().getSimpleName(),
+                    describeChannel(clientChannel),
+                    e.getMessage()
+                );
+                response = CommandResponse.failure(e.getMessage());
+            }
+        }
+        CommandResponse responseToSend = response;
+        responsePool.submit(() -> {
+            try {
+                writeResponse(clientChannel, responseToSend);
+                LOGGER.info("Sent response to {}", describeChannel(clientChannel));
+            } catch (IOException e) {
+                LOGGER.error("Failed to send response to {}", describeChannel(clientChannel), e);
+            }
+        }).join();
+    }
+
     private static ServerContext contextForRequest(
         CommandRequest request,
-        ServerContext baseServerContext,
-        SessionManager sessionManager
+        ServerContext baseServerContext
     ) {
-        String ownerLogin = sessionManager
-            .findLogin(request.authToken())
-            .orElse(INTERNAL_OWNER_LOGIN);
+        String ownerLogin = request.login() == null
+            ? INTERNAL_OWNER_LOGIN
+            : request.login();
         return new ServerContext(
             baseServerContext.collectionManager(),
             baseServerContext.movieRepository(),
             baseServerContext.userRepository(),
-            baseServerContext.sessionManager(),
             baseServerContext.passwordHasher(),
             baseServerContext.ownersByKey(),
             ownerLogin
         );
+    }
+
+    private static void validateRequestCredentials(
+        CommandRequest request,
+        ServerContext baseServerContext
+    ) throws Exception {
+        if (request.login() == null || request.password() == null) {
+            throw new IllegalStateException("authentication required");
+        }
+        String storedHash = baseServerContext.userRepository()
+            .findPasswordHash(request.login())
+            .orElseThrow(() -> new IllegalStateException("invalid login or password"));
+        if (!baseServerContext.passwordHasher().verify(request.password(), storedHash)) {
+            throw new IllegalStateException("invalid login or password");
+        }
     }
 
     private static CommandResponse successResponse(
@@ -271,8 +279,7 @@ public class ServerApp {
         }
         return CommandResponse.authenticated(
             message,
-            authResult.login(),
-            authResult.authToken()
+            authResult.login()
         );
     }
 

@@ -18,4 +18,13 @@ public abstract class SharedCommand
     public boolean requiresAuthentication() {
         return true;
     }
+
+    /**
+     * Returns whether this command only reads server state.
+     *
+     * @return true if command is read-only
+     */
+    public boolean isReadOnly() {
+        return false;
+    }
 }

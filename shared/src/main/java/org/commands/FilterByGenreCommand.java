@@ -37,4 +37,9 @@ public class FilterByGenreCommand extends SharedCommand {
                 .filter(movie -> movie.getGenre().equals(genre))
         );
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

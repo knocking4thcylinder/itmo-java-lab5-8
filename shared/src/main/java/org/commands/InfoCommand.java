@@ -51,4 +51,9 @@ public class InfoCommand extends SharedCommand {
         }
         return sb.toString();
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

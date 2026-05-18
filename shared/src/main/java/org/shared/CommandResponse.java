@@ -8,13 +8,11 @@ import java.io.Serializable;
  * @param success признак успешного выполнения
  * @param message текст результата или ошибки
  * @param login логин авторизованного пользователя
- * @param authToken токен авторизации
  */
 public record CommandResponse(
     boolean success,
     String message,
-    String login,
-    String authToken
+    String login
 ) implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -37,7 +35,7 @@ public record CommandResponse(
      * @return успешный ответ
      */
     public static CommandResponse success(String message) {
-        return new CommandResponse(true, message, null, null);
+        return new CommandResponse(true, message, null);
     }
 
     /**
@@ -45,15 +43,13 @@ public record CommandResponse(
      *
      * @param message текст результата
      * @param login логин пользователя
-     * @param authToken токен авторизации
      * @return успешный ответ
      */
     public static CommandResponse authenticated(
         String message,
-        String login,
-        String authToken
+        String login
     ) {
-        return new CommandResponse(true, message, login, authToken);
+        return new CommandResponse(true, message, login);
     }
 
     /**
@@ -63,6 +59,6 @@ public record CommandResponse(
      * @return неуспешный ответ
      */
     public static CommandResponse failure(String message) {
-        return new CommandResponse(false, message, null, null);
+        return new CommandResponse(false, message, null);
     }
 }

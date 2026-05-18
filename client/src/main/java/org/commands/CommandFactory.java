@@ -59,6 +59,18 @@ public class CommandFactory {
                 requireArgCount(name, args, 0);
                 yield new ExitCommand();
             }
+            case "connect" -> {
+                requireArgCount(name, args, 2);
+                yield new ConnectCommand(args[0], parsePort(args[1]));
+            }
+            case "use_server" -> {
+                requireArgCount(name, args, 2);
+                yield new UseServerCommand(args[0], parsePort(args[1]));
+            }
+            case "servers" -> {
+                requireArgCount(name, args, 0);
+                yield new ServersCommand();
+            }
             case "register" -> {
                 requireArgCount(name, args, 2);
                 yield new RegisterCommand(args[0], args[1]);
@@ -125,11 +137,23 @@ public class CommandFactory {
     }
 
     private int parseId(String rawId) {
+        return parseInt(rawId, "id");
+    }
+
+    private int parsePort(String rawPort) {
+        int port = parseInt(rawPort, "port");
+        if (port <= 0 || port > 65535) {
+            throw new IllegalArgumentException("Port must be in 1..65535");
+        }
+        return port;
+    }
+
+    private int parseInt(String rawValue, String label) {
         try {
-            return Integer.parseInt(rawId);
+            return Integer.parseInt(rawValue);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
-                "\"" + rawId + "\" is not a valid id"
+                "\"" + rawValue + "\" is not a valid " + label
             );
         }
     }

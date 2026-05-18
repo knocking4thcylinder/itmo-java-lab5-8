@@ -47,6 +47,7 @@ public class App {
             commandFactory,
             commandInvoker
         );
+        clientContext.connect(new org.commands.ServerEndpoint(serverHost, serverPort));
         System.out.print("> ");
         for (String[] command : inputParser) {
             if (command.length == 0 || command[0].isEmpty()) {

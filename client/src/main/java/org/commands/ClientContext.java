@@ -1,7 +1,9 @@
 package org.commands;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -14,8 +16,8 @@ public class ClientContext {
     private final CommandFactory commandFactory;
     private final ClientCommandInvoker commandInvoker;
     private final Set<String> executingScripts;
-    private String login;
-    private String authToken;
+    private final Map<ServerEndpoint, ServerSession> sessions;
+    private ServerEndpoint activeEndpoint;
 
     /**
      * Создает новый клиентский контекст.
@@ -33,7 +35,9 @@ public class ClientContext {
             inputParser,
             commandFactory,
             commandInvoker,
-            Collections.synchronizedSet(new HashSet<>())
+            Collections.synchronizedSet(new HashSet<>()),
+            new LinkedHashMap<>(),
+            null
         );
     }
 
@@ -41,7 +45,9 @@ public class ClientContext {
         InputParser inputParser,
         CommandFactory commandFactory,
         ClientCommandInvoker commandInvoker,
-        Set<String> executingScripts
+        Set<String> executingScripts,
+        Map<ServerEndpoint, ServerSession> sessions,
+        ServerEndpoint activeEndpoint
     ) {
         this.inputParser = Objects.requireNonNull(
             inputParser,
@@ -59,6 +65,8 @@ public class ClientContext {
             executingScripts,
             "Executing scripts cannot be null"
         );
+        this.sessions = Objects.requireNonNull(sessions, "Sessions cannot be null");
+        this.activeEndpoint = activeEndpoint;
     }
 
     /**
@@ -94,38 +102,109 @@ public class ClientContext {
      * @return логин или null
      */
     public String login() {
-        return login;
+        ServerSession session = activeSessionOrNull();
+        return session == null ? null : session.login();
     }
 
     /**
-     * Возвращает токен авторизации текущего пользователя.
+     * Возвращает пароль текущего пользователя.
      *
-     * @return токен или null
+     * @return пароль или null
      */
-    public String authToken() {
-        return authToken;
+    public String password() {
+        ServerSession session = activeSessionOrNull();
+        return session == null ? null : session.password();
     }
 
     /**
      * Сохраняет состояние авторизации клиента.
      *
      * @param login логин пользователя
-     * @param authToken токен авторизации
+     * @param password пароль
      */
-    public void authenticate(String login, String authToken) {
-        this.login = Objects.requireNonNull(login, "Login cannot be null");
-        this.authToken = Objects.requireNonNull(
-            authToken,
-            "Auth token cannot be null"
-        );
+    public void authenticate(String login, String password) {
+        authenticate(activeEndpoint(), login, password);
+    }
+
+    /**
+     * Saves authentication state for a server.
+     *
+     * @param endpoint server endpoint
+     * @param login login
+     * @param password password
+     */
+    public void authenticate(
+        ServerEndpoint endpoint,
+        String login,
+        String password
+    ) {
+        session(endpoint).authenticate(login, password);
     }
 
     /**
      * Сбрасывает состояние авторизации клиента.
      */
     public void clearAuthentication() {
-        this.login = null;
-        this.authToken = null;
+        ServerSession session = activeSessionOrNull();
+        if (session != null) {
+            session.clearAuthentication();
+        }
+    }
+
+    /**
+     * Adds a server and makes it active.
+     *
+     * @param endpoint server endpoint
+     */
+    public void connect(ServerEndpoint endpoint) {
+        session(endpoint);
+        activeEndpoint = endpoint;
+    }
+
+    /**
+     * Changes the active server.
+     *
+     * @param endpoint server endpoint
+     */
+    public void useServer(ServerEndpoint endpoint) {
+        if (!sessions.containsKey(endpoint)) {
+            throw new IllegalArgumentException(
+                "Server " + endpoint + " is not connected"
+            );
+        }
+        activeEndpoint = endpoint;
+    }
+
+    /**
+     * Returns active server endpoint.
+     *
+     * @return active endpoint
+     */
+    public ServerEndpoint activeEndpoint() {
+        if (activeEndpoint == null) {
+            throw new IllegalStateException("No active server. Use connect first.");
+        }
+        return activeEndpoint;
+    }
+
+    /**
+     * Returns connected server sessions.
+     *
+     * @return sessions by endpoint
+     */
+    public Map<ServerEndpoint, ServerSession> sessions() {
+        return Collections.unmodifiableMap(sessions);
+    }
+
+    public ServerSession session(ServerEndpoint endpoint) {
+        return sessions.computeIfAbsent(endpoint, ServerSession::new);
+    }
+
+    private ServerSession activeSessionOrNull() {
+        if (activeEndpoint == null) {
+            return null;
+        }
+        return sessions.get(activeEndpoint);
     }
     
     /**
@@ -142,10 +221,10 @@ public class ClientContext {
             copiedInputParser,
             new CommandFactory(copiedInputParser),
             commandInvoker,
-            executingScripts
+            executingScripts,
+            sessions,
+            activeEndpoint
         );
-        copiedContext.login = login;
-        copiedContext.authToken = authToken;
         return copiedContext;
     }
 

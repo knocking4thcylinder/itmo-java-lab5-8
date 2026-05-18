@@ -16,4 +16,9 @@ public class ShowCommand extends SharedCommand {
             context.visibleCollection().values().stream()
         );
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

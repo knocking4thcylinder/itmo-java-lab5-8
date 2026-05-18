@@ -27,6 +27,14 @@ public class RegisterCommand extends SharedCommand {
         return "registered and logged in as " + login;
     }
 
+    public String login() {
+        return login;
+    }
+
+    public String password() {
+        return password;
+    }
+
     @Override
     public boolean requiresAuthentication() {
         return false;

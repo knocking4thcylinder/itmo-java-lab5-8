@@ -8,11 +8,13 @@ import org.commands.SharedCommand;
  * Сериализуемый запрос клиента к серверу.
  *
  * @param command удаленная команда для выполнения на сервере
- * @param authToken токен авторизации клиента
+ * @param login логин пользователя
+ * @param password пароль пользователя
  */
 public record CommandRequest(
     SharedCommand command,
-    String authToken
+    String login,
+    String password
 ) implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -33,17 +35,22 @@ public record CommandRequest(
      * @return запрос команды
      */
     public static CommandRequest of(SharedCommand command) {
-        return new CommandRequest(command, null);
+        return new CommandRequest(command, null, null);
     }
 
     /**
      * Создает новый запрос на выполнение серверной команды.
      *
      * @param command общая команда
-     * @param authToken токен авторизации клиента
+     * @param login логин пользователя
+     * @param password пароль пользователя
      * @return запрос команды
      */
-    public static CommandRequest of(SharedCommand command, String authToken) {
-        return new CommandRequest(command, authToken);
+    public static CommandRequest of(
+        SharedCommand command,
+        String login,
+        String password
+    ) {
+        return new CommandRequest(command, login, password);
     }
 }

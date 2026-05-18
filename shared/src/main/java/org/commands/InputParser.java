@@ -157,7 +157,7 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
             );
 
             parsedInput = inputSource.readLine();
-            result = escapeXml(parsedInput.trim());
+            result = parsedInput.trim();
         } else if (fieldType.isEnum()) {
             System.out.print(", possible values for this field: ");
             Object[] enumConstants = fieldType.getEnumConstants();
@@ -211,15 +211,6 @@ public class InputParser implements AutoCloseable, Iterable<String[]> {
                 return parseCommand();
             }
         };
-    }
-
-    private String escapeXml(String input) {
-        return input
-            .replace("&",  "&amp;")
-            .replace("<",  "&lt;")
-            .replace(">",  "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'",  "&apos;");
     }
 
     /**

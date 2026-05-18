@@ -8,6 +8,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.StringJoiner;
 import org.shared.CommandRequest;
 import org.shared.CommandResponse;
 import org.shared.TransportCodec;
@@ -20,9 +21,6 @@ public class ClientCommandInvoker {
     private static final int MAX_RETRIES = 3;
     private static final int SELECT_TIMEOUT_MS = 2_000;
 
-    private final String serverHost;
-    private final int serverPort;
-
     /**
      * Создает новый клиентский invoker.
      *
@@ -30,11 +28,7 @@ public class ClientCommandInvoker {
      * @param serverPort порт сервера
      */
     public ClientCommandInvoker(String serverHost, int serverPort) {
-        this.serverHost = Objects.requireNonNull(
-            serverHost,
-            "Server host cannot be null"
-        );
-        this.serverPort = serverPort;
+        Objects.requireNonNull(serverHost, "Server host cannot be null");
     }
 
     /**
@@ -51,16 +45,90 @@ public class ClientCommandInvoker {
             return clientCommand.exec(context);
         }
         if (command instanceof SharedCommand sharedCommand) {
-            return executeOnServer(sharedCommand, context);
+            return executeSharedCommand(sharedCommand, context);
         }
         throw new IllegalStateException(
             "Unsupported command type: " + command.getClass().getName()
         );
     }
 
-    private String executeOnServer(
+    private String executeSharedCommand(
         SharedCommand sharedCommand,
         ClientContext context
+    )
+        throws Exception {
+        if (sharedCommand.isReadOnly()) {
+            return executeReadOnlyOnAllServers(sharedCommand, context);
+        }
+
+        ServerEndpoint activeEndpoint = context.activeEndpoint();
+        String activeResult = executeOnServer(sharedCommand, context, activeEndpoint);
+        rememberCredentials(sharedCommand, context, activeEndpoint);
+        if (!sharedCommand.requiresAuthentication()) {
+            return activeResult;
+        }
+
+        var otherEndpoints = context.sessions()
+            .values()
+            .stream()
+            .filter(ServerSession::isAuthenticated)
+            .map(ServerSession::endpoint)
+            .filter(endpoint -> !endpoint.equals(activeEndpoint))
+            .toList();
+        if (otherEndpoints.isEmpty()) {
+            return activeResult;
+        }
+        if (!confirmOtherServers(context)) {
+            return activeResult;
+        }
+
+        StringJoiner result = new StringJoiner("\n");
+        result.add("[" + activeEndpoint + "] " + activeResult);
+        for (ServerEndpoint endpoint : otherEndpoints) {
+            try {
+                result.add(
+                    "[" +
+                    endpoint +
+                    "] " +
+                    executeOnServer(sharedCommand, context, endpoint)
+                );
+            } catch (Exception e) {
+                result.add("[" + endpoint + "] failed: " + e.getMessage());
+            }
+        }
+        return result.toString();
+    }
+
+    private String executeReadOnlyOnAllServers(
+        SharedCommand sharedCommand,
+        ClientContext context
+    ) {
+        StringJoiner result = new StringJoiner("\n");
+        for (ServerEndpoint endpoint : context.sessions().keySet()) {
+            try {
+                result.add(
+                    "[" +
+                    endpoint +
+                    "]\n" +
+                    executeOnServer(sharedCommand, context, endpoint)
+                );
+            } catch (Exception e) {
+                result.add("[" + endpoint + "] failed: " + e.getMessage());
+            }
+        }
+        return result.toString();
+    }
+
+    private boolean confirmOtherServers(ClientContext context) {
+        System.out.print("Execute this command on other connected servers? [y/N]: ");
+        String answer = context.inputParser().getInputSource().readLine();
+        return answer != null && answer.trim().equalsIgnoreCase("y");
+    }
+
+    private String executeOnServer(
+        SharedCommand sharedCommand,
+        ClientContext context,
+        ServerEndpoint endpoint
     )
         throws Exception {
         IOException lastIOException = null;
@@ -70,11 +138,17 @@ public class ClientCommandInvoker {
                 SocketChannel socketChannel = SocketChannel.open()
             ) {
                 socketChannel.configureBlocking(false);
-                socketChannel.connect(new InetSocketAddress(serverHost, serverPort));
+                socketChannel.connect(
+                    new InetSocketAddress(endpoint.host(), endpoint.port())
+                );
                 socketChannel.register(selector, SelectionKey.OP_CONNECT);
 
                 ByteBuffer writeBuffer = TransportCodec.encode(
-                    CommandRequest.of(sharedCommand, context.authToken())
+                    CommandRequest.of(
+                        sharedCommand,
+                        context.session(endpoint).login(),
+                        context.session(endpoint).password()
+                    )
                 );
                 ByteBuffer lengthBuffer = ByteBuffer.allocate(Integer.BYTES);
                 ByteBuffer payloadBuffer = null;
@@ -126,7 +200,8 @@ public class ClientCommandInvoker {
                             }
                             return unwrapResponse(
                                 TransportCodec.decode(payloadBuffer.array()),
-                                context
+                                context,
+                                endpoint
                             );
                         }
                     }
@@ -141,16 +216,37 @@ public class ClientCommandInvoker {
         );
     }
 
-    private String unwrapResponse(Object responseObject, ClientContext context) {
+    private String unwrapResponse(
+        Object responseObject,
+        ClientContext context,
+        ServerEndpoint endpoint
+    ) {
         if (!(responseObject instanceof CommandResponse response)) {
             throw new IllegalStateException("Unsupported response type");
         }
         if (!response.success()) {
             throw new IllegalStateException(response.message());
         }
-        if (response.login() != null && response.authToken() != null) {
-            context.authenticate(response.login(), response.authToken());
-        }
         return response.message();
+    }
+
+    private void rememberCredentials(
+        SharedCommand command,
+        ClientContext context,
+        ServerEndpoint endpoint
+    ) {
+        if (command instanceof LoginCommand loginCommand) {
+            context.authenticate(
+                endpoint,
+                loginCommand.login(),
+                loginCommand.password()
+            );
+        } else if (command instanceof RegisterCommand registerCommand) {
+            context.authenticate(
+                endpoint,
+                registerCommand.login(),
+                registerCommand.password()
+            );
+        }
     }
 }

@@ -3,7 +3,6 @@ package org.auth;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
@@ -11,47 +10,34 @@ import java.util.Base64;
  */
 public class PasswordHasher {
 
-    private static final int SALT_BYTES = 16;
-    private static final String ALGORITHM = "SHA-512";
-    private static final String SEPARATOR = ":";
-
-    private final SecureRandom secureRandom = new SecureRandom();
+    private static final String ALGORITHM = "MD2";
 
     /**
-     * Creates a salted password hash.
+     * Creates an MD2 password hash.
      *
      * @param password plain password
-     * @return encoded salt and hash
+     * @return encoded MD2 hash
      */
     public String hash(String password) {
-        byte[] salt = new byte[SALT_BYTES];
-        secureRandom.nextBytes(salt);
-        byte[] hash = digest(salt, password);
-        return encode(salt) + SEPARATOR + encode(hash);
+        return encode(digest(password));
     }
 
     /**
-     * Verifies a plain password against a stored salted hash.
+     * Verifies a plain password against a stored MD2 hash.
      *
      * @param password plain password
-     * @param storedHash stored salt and hash
+     * @param storedHash stored MD2 hash
      * @return true if password matches
      */
     public boolean verify(String password, String storedHash) {
-        String[] parts = storedHash.split(SEPARATOR, 2);
-        if (parts.length != 2) {
-            return false;
-        }
-        byte[] salt = Base64.getDecoder().decode(parts[0]);
-        byte[] expectedHash = Base64.getDecoder().decode(parts[1]);
-        byte[] actualHash = digest(salt, password);
+        byte[] expectedHash = Base64.getDecoder().decode(storedHash);
+        byte[] actualHash = digest(password);
         return MessageDigest.isEqual(expectedHash, actualHash);
     }
 
-    private byte[] digest(byte[] salt, String password) {
+    private byte[] digest(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance(ALGORITHM);
-            digest.update(salt);
             return digest.digest(password.getBytes(StandardCharsets.UTF_8));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(ALGORITHM + " is not available", e);
