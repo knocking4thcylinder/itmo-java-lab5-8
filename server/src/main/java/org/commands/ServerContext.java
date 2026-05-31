@@ -86,6 +86,11 @@ public class ServerContext implements SharedCommandContext {
     }
 
     @Override
+    public String ownerOf(String key) {
+        return ownersByKey.get(key);
+    }
+
+    @Override
     public Map<String, Movie> visibleCollection() {
         return collectionManager.getCollection();
     }

@@ -4,12 +4,14 @@
 package org;
 
 import java.util.Arrays;
+import javax.swing.SwingUtilities;
 import org.commands.Command;
 import org.commands.CommandFactory;
 import org.commands.ClientCommandInvoker;
 import org.commands.ClientContext;
 import org.commands.InputParser;
 import org.commands.ScannerInputSource;
+import org.gui.MovieCollectionFrame;
 
 /**
  * Клиентское приложение для отправки команд на сервер.
@@ -21,19 +23,27 @@ public class App {
      * @param args аргументы командной строки: хост и порт сервера
      */
     public static void main(String[] args) {
-        if (args.length != 2) {
+        boolean consoleMode = args.length == 3 && "--console".equals(args[0]);
+        if ((!consoleMode && args.length != 2) || (consoleMode && args.length != 3)) {
             System.out.println(
-                "Usage: java -jar /path/to/.jar <server-host> <server-port>"
+                "Usage: java -jar /path/to/.jar [--console] <server-host> <server-port>"
             );
             System.exit(1);
         }
-        String serverHost = args[0];
+        String serverHost = args[consoleMode ? 1 : 0];
         int serverPort;
         try {
-            serverPort = Integer.parseInt(args[1]);
+            serverPort = Integer.parseInt(args[consoleMode ? 2 : 1]);
         } catch (NumberFormatException e) {
-            System.out.println("\"" + args[1] + "\" is not a valid port");
+            System.out.println("\"" + args[consoleMode ? 2 : 1] + "\" is not a valid port");
             System.exit(1);
+            return;
+        }
+
+        if (!consoleMode) {
+            SwingUtilities.invokeLater(() ->
+                new MovieCollectionFrame(serverHost, serverPort).setVisible(true)
+            );
             return;
         }
 

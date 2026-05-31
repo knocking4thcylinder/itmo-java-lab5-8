@@ -18,5 +18,7 @@ out/
 *.swp
 *~
 .DS_Store
+report/
+report/**
 reports/
 reports/**

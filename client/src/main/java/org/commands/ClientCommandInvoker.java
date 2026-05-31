@@ -20,6 +20,7 @@ public class ClientCommandInvoker {
 
     private static final int MAX_RETRIES = 3;
     private static final int SELECT_TIMEOUT_MS = 2_000;
+    private final boolean promptForMultiServerMutations;
 
     /**
      * Создает новый клиентский invoker.
@@ -28,7 +29,16 @@ public class ClientCommandInvoker {
      * @param serverPort порт сервера
      */
     public ClientCommandInvoker(String serverHost, int serverPort) {
+        this(serverHost, serverPort, true);
+    }
+
+    public ClientCommandInvoker(
+        String serverHost,
+        int serverPort,
+        boolean promptForMultiServerMutations
+    ) {
         Objects.requireNonNull(serverHost, "Server host cannot be null");
+        this.promptForMultiServerMutations = promptForMultiServerMutations;
     }
 
     /**
@@ -120,6 +130,9 @@ public class ClientCommandInvoker {
     }
 
     private boolean confirmOtherServers(ClientContext context) {
+        if (!promptForMultiServerMutations) {
+            return false;
+        }
         System.out.print("Execute this command on other connected servers? [y/N]: ");
         String answer = context.inputParser().getInputSource().readLine();
         return answer != null && answer.trim().equalsIgnoreCase("y");

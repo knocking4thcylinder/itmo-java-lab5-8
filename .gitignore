@@ -100,6 +100,7 @@ initial_movies.xml
 script1.txt
 script2.txt
 doc
+report/**
 reports/**
 *.png
 helios
