@@ -110,4 +110,23 @@ public interface SharedCommandContext {
     default AuthResult latestAuthResult() {
         return null;
     }
+
+    /**
+     * Returns the owner login for the current command.
+     *
+     * @return owner login or null when ownership is not available
+     */
+    default String ownerLogin() {
+        return null;
+    }
+
+    /**
+     * Returns the owner login for a collection key.
+     *
+     * @param key collection key
+     * @return owner login or null when the key has no known owner
+     */
+    default String ownerOf(String key) {
+        return null;
+    }
 }

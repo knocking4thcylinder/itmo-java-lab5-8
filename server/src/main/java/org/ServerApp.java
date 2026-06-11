@@ -10,7 +10,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.auth.PasswordHasher;
 import org.commands.Command;
 import org.commands.InputParser;
@@ -20,6 +24,7 @@ import org.commands.ServerConsoleCommandFactory;
 import org.commands.ServerContext;
 import org.commands.ServerCommandInvoker;
 import org.commands.SharedCommand;
+import org.commands.SubscribeUpdatesCommand;
 import org.db.DatabaseConnector;
 import org.db.LoadedMovies;
 import org.db.MovieRepository;
@@ -80,6 +85,7 @@ public class ServerApp {
             INTERNAL_OWNER_LOGIN
         );
         ServerCommandInvoker commandInvoker = new ServerCommandInvoker();
+        UpdateBroadcaster updateBroadcaster = new UpdateBroadcaster();
         ServerContext serverConsoleContext = new ServerContext(
             collectionManager,
             movieRepository,
@@ -92,6 +98,13 @@ public class ServerApp {
 
         try (
             ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            ExecutorService requestReaderPool = Executors.newCachedThreadPool(
+                namedThreadFactory("server-request-reader")
+            );
+            ExecutorService requestProcessorPool = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors(),
+                namedThreadFactory("server-request-processor")
+            );
             ForkJoinPool responsePool = new ForkJoinPool()
         ) {
             serverChannel.bind(new InetSocketAddress(port));
@@ -100,15 +113,16 @@ public class ServerApp {
             while (true) {
                 SocketChannel clientChannel = serverChannel.accept();
                 LOGGER.info("Accepted connection from {}", describeChannel(clientChannel));
-                new Thread(
+                requestReaderPool.submit(
                     () -> readClientRequest(
                         clientChannel,
                         commandInvoker,
                         serverContext,
+                        updateBroadcaster,
+                        requestProcessorPool,
                         responsePool
-                    ),
-                    "server-request-reader"
-                ).start();
+                    )
+                );
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start server", e);
@@ -145,35 +159,37 @@ public class ServerApp {
         SocketChannel clientChannel,
         ServerCommandInvoker commandInvoker,
         ServerContext baseServerContext,
+        UpdateBroadcaster updateBroadcaster,
+        ExecutorService requestProcessorPool,
         ForkJoinPool responsePool
     ) {
-        try (clientChannel) {
+        try {
             clientChannel.configureBlocking(true);
             LOGGER.info("Started handling {}", describeChannel(clientChannel));
             Object requestObject = TransportCodec.decode(readPayload(clientChannel));
-            Thread processingThread = new Thread(
+            requestProcessorPool.submit(
                 () -> processRequestAndRespond(
                     requestObject,
                     clientChannel,
                     commandInvoker,
                     baseServerContext,
+                    updateBroadcaster,
                     responsePool
-                ),
-                "server-request-processor"
+                )
             );
-            processingThread.start();
-            processingThread.join();
         } catch (EOFException ignored) {
             LOGGER.warn(
                 "Client {} closed the connection before sending a full request",
                 describeChannel(clientChannel)
             );
+            closeClientChannel(clientChannel);
         } catch (Exception e) {
             LOGGER.error(
                 "Failed to handle client {}",
                 describeChannel(clientChannel),
                 e
             );
+            closeClientChannel(clientChannel);
         }
     }
 
@@ -182,6 +198,7 @@ public class ServerApp {
         SocketChannel clientChannel,
         ServerCommandInvoker commandInvoker,
         ServerContext baseServerContext,
+        UpdateBroadcaster updateBroadcaster,
         ForkJoinPool responsePool
     ) {
         CommandResponse response;
@@ -202,6 +219,12 @@ public class ServerApp {
                 if (request.command().requiresAuthentication()) {
                     validateRequestCredentials(request, baseServerContext);
                 }
+                if (request.command() instanceof SubscribeUpdatesCommand) {
+                    updateBroadcaster.subscribe(clientChannel);
+                    writeResponse(clientChannel, CommandResponse.success("subscribed"));
+                    LOGGER.info("Registered update subscriber {}", describeChannel(clientChannel));
+                    return;
+                }
                 ServerContext requestContext = contextForRequest(
                     request,
                     baseServerContext
@@ -216,6 +239,9 @@ public class ServerApp {
                     describeChannel(clientChannel)
                 );
                 response = successResponse(result, requestContext);
+                if (shouldBroadcastUpdate(request.command())) {
+                    updateBroadcaster.broadcast();
+                }
             } catch (Exception e) {
                 LOGGER.warn(
                     "Command {} from {} failed: {}",
@@ -233,8 +259,14 @@ public class ServerApp {
                 LOGGER.info("Sent response to {}", describeChannel(clientChannel));
             } catch (IOException e) {
                 LOGGER.error("Failed to send response to {}", describeChannel(clientChannel), e);
+            } finally {
+                closeClientChannel(clientChannel);
             }
         }).join();
+    }
+
+    private static boolean shouldBroadcastUpdate(SharedCommand command) {
+        return command.requiresAuthentication() && !command.isReadOnly();
     }
 
     private static ServerContext contextForRequest(
@@ -363,6 +395,44 @@ public class ServerApp {
             return String.valueOf(channel.getRemoteAddress());
         } catch (IOException e) {
             return "<unknown-client>";
+        }
+    }
+
+    private static ThreadFactory namedThreadFactory(String namePrefix) {
+        AtomicInteger counter = new AtomicInteger(1);
+        return task -> new Thread(
+            task,
+            namePrefix + "-" + counter.getAndIncrement()
+        );
+    }
+
+    private static void closeClientChannel(SocketChannel channel) {
+        try {
+            channel.close();
+        } catch (IOException e) {
+            LOGGER.warn("Failed to close client channel", e);
+        }
+    }
+
+    private static final class UpdateBroadcaster {
+        private final java.util.Set<SocketChannel> subscribers = ConcurrentHashMap.newKeySet();
+
+        private void subscribe(SocketChannel channel) {
+            subscribers.add(channel);
+        }
+
+        private void broadcast() {
+            CommandResponse update = CommandResponse.success("collection-updated");
+            for (SocketChannel subscriber : subscribers) {
+                try {
+                    synchronized (subscriber) {
+                        writeResponse(subscriber, update);
+                    }
+                } catch (IOException e) {
+                    subscribers.remove(subscriber);
+                    closeClientChannel(subscriber);
+                }
+            }
         }
     }
 }

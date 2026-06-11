@@ -7,9 +7,11 @@ import java.util.Objects;
  */
 public final class DatabaseConfig {
 
-    public static final String HOST = "pg";
-    public static final int PORT = 5432;
-    public static final String DATABASE = "studs";
+    public static final String HOST = valueOrDefault("DB_HOST", "pg");
+    public static final int PORT = Integer.parseInt(
+        valueOrDefault("DB_PORT", "5432")
+    );
+    public static final String DATABASE = valueOrDefault("DB_NAME", "studs");
     public static final String USER = Objects.requireNonNull(
         System.getenv("DB_USER")
     );
@@ -26,5 +28,10 @@ public final class DatabaseConfig {
      */
     public static String jdbcUrl() {
         return "jdbc:postgresql://" + HOST + ":" + PORT + "/" + DATABASE;
+    }
+
+    private static String valueOrDefault(String name, String defaultValue) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 }
