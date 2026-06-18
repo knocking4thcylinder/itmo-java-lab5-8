@@ -8,6 +8,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import org.commands.ServerEndpoint;
 import org.commands.SubscribeUpdatesCommand;
 import org.shared.CommandRequest;
@@ -23,6 +24,7 @@ final class UpdateSubscription implements AutoCloseable {
     private final String login;
     private final String password;
     private final Runnable onUpdate;
+    private final Consumer<String> onError;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private volatile boolean running;
     private volatile SocketChannel channel;
@@ -31,12 +33,14 @@ final class UpdateSubscription implements AutoCloseable {
         ServerEndpoint endpoint,
         String login,
         String password,
-        Runnable onUpdate
+        Runnable onUpdate,
+        Consumer<String> onError
     ) {
         this.endpoint = java.util.Objects.requireNonNull(endpoint, "Endpoint cannot be null");
         this.login = java.util.Objects.requireNonNull(login, "Login cannot be null");
         this.password = java.util.Objects.requireNonNull(password, "Password cannot be null");
         this.onUpdate = java.util.Objects.requireNonNull(onUpdate, "Update callback cannot be null");
+        this.onError = java.util.Objects.requireNonNull(onError, "Error callback cannot be null");
     }
 
     void start() {
@@ -48,8 +52,11 @@ final class UpdateSubscription implements AutoCloseable {
         while (running) {
             try {
                 listenOnce();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 closeChannel();
+                if (running) {
+                    javax.swing.SwingUtilities.invokeLater(() -> onError.accept(e.getMessage()));
+                }
                 sleepBeforeReconnect();
             }
         }

@@ -15,6 +15,8 @@ import java.awt.Polygon;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -107,6 +109,7 @@ public class MovieCollectionFrame extends JFrame {
     private boolean tableSelectionListenerInstalled;
     private boolean updatingServerBox;
     private boolean refreshInProgress;
+    private boolean refreshAgainRequested;
     private UpdateSubscription updateSubscription;
     private List<MovieRow> allRows = new ArrayList<>();
     private MovieRow selectedRow;
@@ -124,6 +127,13 @@ public class MovieCollectionFrame extends JFrame {
         updateFilterValueControl();
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                stopUpdateSubscription();
+                worker.shutdownNow();
+            }
+        });
         setMinimumSize(new Dimension(1100, 760));
         setContentPane(buildContent());
         setLocationByPlatform(true);
@@ -615,7 +625,7 @@ public class MovieCollectionFrame extends JFrame {
         }
         signIn.setEnabled(false);
         registerButton.setEnabled(false);
-        showAuthMessage("Connecting...", false);
+        showAuthMessage(t("message.connecting"), false);
         SharedCommand command = register
             ? new RegisterCommand(login, password)
             : new LoginCommand(login, password);
@@ -654,9 +664,11 @@ public class MovieCollectionFrame extends JFrame {
 
     private void refreshRows(boolean showError) {
         if (refreshInProgress) {
+            refreshAgainRequested = true;
             return;
         }
         refreshInProgress = true;
+        refreshAgainRequested = false;
         runCommand(new UiSnapshotCommand(), response -> {
             refreshInProgress = false;
             allRows = MovieRow.parse(response);
@@ -665,12 +677,20 @@ public class MovieCollectionFrame extends JFrame {
             selectedRow = null;
             updateSelection();
             relabel();
+            runPendingRefresh(showError);
         }, error -> {
             refreshInProgress = false;
             if (showError) {
                 showMessage(error);
             }
+            runPendingRefresh(showError);
         });
+    }
+
+    private void runPendingRefresh(boolean showError) {
+        if (refreshAgainRequested) {
+            refreshRows(showError);
+        }
     }
 
     private void startUpdateSubscription() {
@@ -682,7 +702,12 @@ public class MovieCollectionFrame extends JFrame {
             context.activeEndpoint(),
             context.login(),
             context.password(),
-            () -> refreshRows(false)
+            () -> refreshRows(false),
+            error -> {
+                if (error != null && !error.isBlank()) {
+                    showAuthMessage(t("message.updateSubscriptionLost") + ": " + error, true);
+                }
+            }
         );
         updateSubscription.start();
     }
@@ -1338,13 +1363,13 @@ public class MovieCollectionFrame extends JFrame {
         private final JTextField oscars = new JTextField();
         private final JComboBox<MovieGenre> genre = new JComboBox<>(MovieGenre.values());
         private final JComboBox<MpaaRating> rating = new JComboBox<>(MpaaRating.values());
-        private final JTextField director = new JTextField("Director");
+        private final JTextField director = new JTextField();
         private final JTextField weight = new JTextField("70.0");
         private final JTextField passportId = new JTextField();
         private final JComboBox<Country> country = new JComboBox<>(Country.values());
         private final JTextField locationX = new JTextField("0");
         private final JTextField locationY = new JTextField("0.0");
-        private final JTextField locationName = new JTextField("studio");
+        private final JTextField locationName = new JTextField();
         private final JLabel validation = new JLabel(" ");
         private Movie movie;
         private boolean saved;
@@ -1409,7 +1434,7 @@ public class MovieCollectionFrame extends JFrame {
                 oscars.setText(Integer.toString(row.oscars()));
                 genre.setSelectedItem(MovieGenre.valueOf(row.genre()));
                 rating.setSelectedItem(MpaaRating.valueOf(row.rating()));
-                director.setText(row.director().isBlank() ? "Director" : row.director());
+                director.setText(row.director());
                 if (!row.weight().isBlank()) {
                     weight.setText(row.weight());
                 }
@@ -1449,63 +1474,62 @@ public class MovieCollectionFrame extends JFrame {
 
         private String validateInput() {
             if (key.isEnabled() && key.getText().trim().isBlank()) {
-                return "Key cannot be null or blank";
+                return translator.apply("validation.key.empty");
             }
             if (name.getText().trim().isBlank()) {
-                return "Movie.name cannot be empty or null";
+                return translator.apply("validation.movie.name.empty");
             }
-            if (parseInteger(x, "Coordinates.X can not be null") == null) {
-                return "Coordinates.X must be an integer";
+            if (parseInteger(x) == null) {
+                return translator.apply("validation.coordinates.x.integer");
             }
-            if (parseInteger(y, "Coordinates.Y can not be null") == null) {
-                return "Coordinates.Y must be an integer";
+            if (parseInteger(y) == null) {
+                return translator.apply("validation.coordinates.y.integer");
             }
-            Integer oscarsValue = parseInteger(oscars, "Movie.oscarsCount must be greater than zero");
+            Integer oscarsValue = parseInteger(oscars);
             if (oscarsValue == null) {
-                return "Movie.oscarsCount must be an integer";
+                return translator.apply("validation.movie.oscars.integer");
             }
             if (oscarsValue <= 0) {
-                return "Movie.oscarsCount must be greater than zero";
+                return translator.apply("validation.movie.oscars.positive");
             }
             if (genre.getSelectedItem() == null) {
-                return "Movie.genre cannot be null";
+                return translator.apply("validation.movie.genre.empty");
             }
             if (rating.getSelectedItem() == null) {
-                return "Movie.mpaaRating cannot be null";
+                return translator.apply("validation.movie.rating.empty");
             }
             if (director.getText().trim().isBlank()) {
-                return "Person.name cannot be empty or null";
+                return translator.apply("validation.person.name.empty");
             }
             Double weightValue = parseDouble(weight);
             if (weightValue == null) {
-                return "Person.weight must be a number";
+                return translator.apply("validation.person.weight.number");
             }
             if (weightValue <= 0) {
-                return "Person.weight must be greater than zero";
+                return translator.apply("validation.person.weight.positive");
             }
             if (country.getSelectedItem() == null) {
-                return "Person.nationality cannot be null";
+                return translator.apply("validation.person.country.empty");
             }
             String passportValue = passportId.getText().trim();
             if (!passportValue.isEmpty() && passportValue.length() < 8) {
-                return "Person.passportID must be a string with length greater then or equal to 8 or null";
+                return translator.apply("validation.person.passport.length");
             }
             if (parseLong(locationX) == null) {
-                return "Location.x must be a long integer";
+                return translator.apply("validation.location.x.integer");
             }
             if (parseDouble(locationY) == null) {
-                return "Location.y must be a number";
+                return translator.apply("validation.location.y.number");
             }
             if (locationName.getText() != null && locationName.getText().isBlank() && !locationName.getText().isEmpty()) {
-                return "Location.name cannot be empty";
+                return translator.apply("validation.location.name.empty");
             }
             return null;
         }
 
-        private Integer parseInteger(JTextField field, String nullMessage) {
+        private Integer parseInteger(JTextField field) {
             String text = field.getText().trim();
             if (text.isBlank()) {
-                showValidation(nullMessage);
                 return null;
             }
             try {
