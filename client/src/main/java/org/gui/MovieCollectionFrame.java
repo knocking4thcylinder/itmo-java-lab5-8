@@ -1,25 +1,14 @@
 package org.gui;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Polygon;
-import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.format.FormatStyle;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,9 +34,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import org.commands.ClientCommandInvoker;
 import org.commands.ClientContext;
 import org.commands.Command;
@@ -69,10 +55,7 @@ import org.commands.ServerEndpoint;
 import org.commands.SharedCommand;
 import org.commands.UiSnapshotCommand;
 import org.commands.UpdateCommand;
-import org.dataclasses.Coordinates;
-import org.dataclasses.Location;
 import org.dataclasses.Movie;
-import org.dataclasses.Person;
 import org.dataclasses.enums.Country;
 import org.dataclasses.enums.MovieGenre;
 import org.dataclasses.enums.MpaaRating;
@@ -107,6 +90,7 @@ public class MovieCollectionFrame extends JFrame {
     private boolean tableSelectionListenerInstalled;
     private boolean updatingServerBox;
     private boolean refreshInProgress;
+    private boolean refreshAgainRequested;
     private UpdateSubscription updateSubscription;
     private List<MovieRow> allRows = new ArrayList<>();
     private MovieRow selectedRow;
@@ -124,6 +108,13 @@ public class MovieCollectionFrame extends JFrame {
         updateFilterValueControl();
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                stopUpdateSubscription();
+                worker.shutdownNow();
+            }
+        });
         setMinimumSize(new Dimension(1100, 760));
         setContentPane(buildContent());
         setLocationByPlatform(true);
@@ -615,7 +606,7 @@ public class MovieCollectionFrame extends JFrame {
         }
         signIn.setEnabled(false);
         registerButton.setEnabled(false);
-        showAuthMessage("Connecting...", false);
+        showAuthMessage(t("message.connecting"), false);
         SharedCommand command = register
             ? new RegisterCommand(login, password)
             : new LoginCommand(login, password);
@@ -654,9 +645,11 @@ public class MovieCollectionFrame extends JFrame {
 
     private void refreshRows(boolean showError) {
         if (refreshInProgress) {
+            refreshAgainRequested = true;
             return;
         }
         refreshInProgress = true;
+        refreshAgainRequested = false;
         runCommand(new UiSnapshotCommand(), response -> {
             refreshInProgress = false;
             allRows = MovieRow.parse(response);
@@ -665,12 +658,20 @@ public class MovieCollectionFrame extends JFrame {
             selectedRow = null;
             updateSelection();
             relabel();
+            runPendingRefresh(showError);
         }, error -> {
             refreshInProgress = false;
             if (showError) {
                 showMessage(error);
             }
+            runPendingRefresh(showError);
         });
+    }
+
+    private void runPendingRefresh(boolean showError) {
+        if (refreshAgainRequested) {
+            refreshRows(showError);
+        }
     }
 
     private void startUpdateSubscription() {
@@ -682,7 +683,12 @@ public class MovieCollectionFrame extends JFrame {
             context.activeEndpoint(),
             context.login(),
             context.password(),
-            () -> refreshRows(false)
+            () -> refreshRows(false),
+            error -> {
+                if (error != null && !error.isBlank()) {
+                    showAuthMessage(t("message.updateSubscriptionLost") + ": " + error, true);
+                }
+            }
         );
         updateSubscription.start();
     }
@@ -914,651 +920,5 @@ public class MovieCollectionFrame extends JFrame {
             t("table.column.owner"),
             t("table.column.created")
         };
-    }
-
-    private static final class OwnershipRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(
-            JTable table,
-            Object value,
-            boolean selected,
-            boolean focus,
-            int row,
-            int column
-        ) {
-            Component component = super.getTableCellRendererComponent(table, value, selected, focus, row, column);
-            MovieTableModel model = (MovieTableModel) table.getModel();
-            MovieRow movie = model.rowAt(table.convertRowIndexToModel(row));
-            if (!selected) {
-                component.setBackground(movie.editable() ? Color.WHITE : new Color(229, 231, 235));
-                component.setForeground(movie.editable() ? Color.BLACK : new Color(75, 85, 99));
-            }
-            return component;
-        }
-    }
-
-    private static final class SectionPanel extends JPanel {
-        private final String title;
-
-        private SectionPanel(String title) {
-            this.title = title;
-            setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(28, 0, 0, 0)
-            ));
-        }
-
-        @Override
-        protected void paintComponent(Graphics graphics) {
-            super.paintComponent(graphics);
-            Graphics2D g = (Graphics2D) graphics.create();
-            g.setColor(HEADER);
-            g.fillRect(0, 0, getWidth(), 28);
-            g.setColor(Color.WHITE);
-            g.setFont(getFont().deriveFont(Font.BOLD, 13f));
-            g.drawString(title, 12, 19);
-            g.dispose();
-        }
-    }
-
-    private static final class LanguageItem {
-        private final String label;
-        private final Locale locale;
-
-        private LanguageItem(String label, Locale locale) {
-            this.label = label;
-            this.locale = locale;
-        }
-
-        private Locale locale() {
-            return locale;
-        }
-
-        private static LanguageItem[] items() {
-            return new LanguageItem[] {
-                new LanguageItem("English (NZ)", Locale.forLanguageTag("en-NZ")),
-                new LanguageItem("Русский", Locale.forLanguageTag("ru-RU")),
-                new LanguageItem("Nederlands", Locale.forLanguageTag("nl-NL")),
-                new LanguageItem("Lietuviu", Locale.forLanguageTag("lt-LT"))
-            };
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            return other instanceof LanguageItem item && locale.equals(item.locale);
-        }
-
-        @Override
-        public int hashCode() {
-            return locale.hashCode();
-        }
-    }
-
-    private static final class Labels {
-        private static ResourceBundle bundle(Locale locale) {
-            return ResourceBundle.getBundle("org.gui.Labels", locale);
-        }
-    }
-
-    private static final class MovieTableModel extends AbstractTableModel {
-        private static final String[] COLUMNS = {
-            "key", "id", "name", "x", "y", "genre", "oscars", "rating",
-            "director", "weight", "country", "passportId", "locationX", "locationY",
-            "locationName", "owner", "created"
-        };
-        private String[] columnLabels = COLUMNS;
-        private List<MovieRow> rows = new ArrayList<>();
-        private Locale locale = Locale.forLanguageTag("en-NZ");
-
-        private void setRows(List<MovieRow> rows) {
-            this.rows = new ArrayList<>(rows);
-            fireTableDataChanged();
-        }
-
-        private List<MovieRow> rows() {
-            return rows;
-        }
-
-        private void setColumnLabels(String[] columnLabels) {
-            this.columnLabels = columnLabels.clone();
-            fireTableStructureChanged();
-        }
-
-        private void setLocale(Locale locale) {
-            this.locale = locale;
-        }
-
-        private MovieRow rowAt(int row) {
-            return rows.get(row);
-        }
-
-        private void select(JTable table, MovieRow row) {
-            int index = rows.indexOf(row);
-            if (index >= 0) {
-                table.setRowSelectionInterval(index, index);
-            }
-        }
-
-        @Override
-        public int getRowCount() {
-            return rows.size();
-        }
-
-        @Override
-        public int getColumnCount() {
-            return COLUMNS.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columnLabels[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            return rows.get(rowIndex).displayValue(COLUMNS[columnIndex], locale);
-        }
-    }
-
-    private record MovieRow(
-        String key,
-        int id,
-        String name,
-        int x,
-        int y,
-        int oscars,
-        String genre,
-        String rating,
-        String owner,
-        boolean editable,
-        String created,
-        String director,
-        String weight,
-        String country,
-        String passportId,
-        String locationX,
-        String locationY,
-        String locationName
-    ) {
-        private static List<MovieRow> parse(String response) {
-            if (response == null || response.isBlank()) {
-                return List.of();
-            }
-            List<MovieRow> rows = new ArrayList<>();
-            for (String line : response.split("\\R")) {
-                String[] parts = line.split("\t", -1);
-                if (parts.length < 18) {
-                    continue;
-                }
-                rows.add(new MovieRow(
-                    unescape(parts[0]),
-                    Integer.parseInt(parts[1]),
-                    unescape(parts[2]),
-                    Integer.parseInt(parts[3]),
-                    Integer.parseInt(parts[4]),
-                    Integer.parseInt(parts[5]),
-                    unescape(parts[6]),
-                    unescape(parts[7]),
-                    unescape(parts[8]),
-                    Boolean.parseBoolean(parts[9]),
-                    unescape(parts[10]),
-                    unescape(parts[11]),
-                    unescape(parts[12]),
-                    unescape(parts[13]),
-                    unescape(parts[14]),
-                    unescape(parts[15]),
-                    unescape(parts[16]),
-                    unescape(parts[17])
-                ));
-            }
-            return rows;
-        }
-
-        private static String unescape(String value) {
-            return value.replace("\\t", "\t").replace("\\n", "\n").replace("\\\\", "\\");
-        }
-
-        private String value(String column) {
-            return switch (column) {
-                case "key" -> key;
-                case "id" -> Integer.toString(id);
-                case "name" -> name;
-                case "x" -> Integer.toString(x);
-                case "y" -> Integer.toString(y);
-                case "genre" -> genre;
-                case "oscars" -> Integer.toString(oscars);
-                case "rating" -> rating;
-                case "director" -> director;
-                case "weight" -> weight;
-                case "country" -> country;
-                case "passportId" -> passportId;
-                case "locationX" -> locationX;
-                case "locationY" -> locationY;
-                case "locationName" -> locationName;
-                case "owner" -> owner;
-                case "created" -> created;
-                default -> "";
-            };
-        }
-
-        private String displayValue(String column, Locale locale) {
-            return switch (column) {
-                case "weight", "locationY" -> formatDouble(value(column), locale);
-                case "created" -> formatDate(value(column), locale);
-                default -> value(column);
-            };
-        }
-
-        private static String formatDouble(String value, Locale locale) {
-            if (value == null || value.isBlank()) {
-                return "";
-            }
-            try {
-                NumberFormat format = NumberFormat.getNumberInstance(locale);
-                format.setMaximumFractionDigits(3);
-                return format.format(Double.parseDouble(value));
-            } catch (NumberFormatException e) {
-                return value;
-            }
-        }
-
-        private static String formatDate(String value, Locale locale) {
-            if (value == null || value.isBlank()) {
-                return "";
-            }
-            try {
-                LocalDateTime dateTime = LocalDateTime.parse(value);
-                return DateTimeFormatter
-                    .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-                    .withLocale(locale)
-                    .format(dateTime);
-            } catch (DateTimeParseException e) {
-                return value;
-            }
-        }
-
-        private static Comparator<MovieRow> comparator(String column) {
-            return switch (column) {
-                case "id" -> Comparator.comparingInt(MovieRow::id);
-                case "x" -> Comparator.comparingInt(MovieRow::x);
-                case "y" -> Comparator.comparingInt(MovieRow::y);
-                case "oscars" -> Comparator.comparingInt(MovieRow::oscars);
-                case "weight" -> Comparator.comparingDouble(row -> parseDouble(row.weight()));
-                case "locationX" -> Comparator.comparingLong(row -> parseLong(row.locationX()));
-                case "locationY" -> Comparator.comparingDouble(row -> parseDouble(row.locationY()));
-                default -> Comparator.comparing(row -> row.value(column), String.CASE_INSENSITIVE_ORDER);
-            };
-        }
-
-        private static double parseDouble(String value) {
-            try {
-                return Double.parseDouble(value);
-            } catch (NumberFormatException e) {
-                return Double.NEGATIVE_INFINITY;
-            }
-        }
-
-        private static long parseLong(String value) {
-            try {
-                return Long.parseLong(value);
-            } catch (NumberFormatException e) {
-                return Long.MIN_VALUE;
-            }
-        }
-    }
-
-    private static final class VisualizationPanel extends JPanel {
-        private List<MovieRow> rows = List.of();
-        private MovieRow selected;
-        private java.util.function.Consumer<MovieRow> listener = row -> {};
-        private float alpha = 1.0f;
-
-        private VisualizationPanel() {
-            setBorder(BorderFactory.createLineBorder(BORDER));
-            setBackground(Color.WHITE);
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent event) {
-                    for (MovieRow row : rows) {
-                        if (circle(row).contains(event.getPoint())) {
-                            listener.accept(row);
-                            return;
-                        }
-                    }
-                }
-            });
-        }
-
-        private void setRows(List<MovieRow> rows) {
-            this.rows = rows;
-            alpha = 0.0f;
-            Timer timer = new Timer(20, null);
-            timer.addActionListener(event -> {
-                alpha = Math.min(1.0f, alpha + 0.12f);
-                repaint();
-                if (alpha >= 1.0f) {
-                    timer.stop();
-                }
-            });
-            timer.start();
-        }
-
-        private void setSelected(MovieRow selected) {
-            this.selected = selected;
-            repaint();
-        }
-
-        private void addMovieClickListener(java.util.function.Consumer<MovieRow> listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        protected void paintComponent(Graphics graphics) {
-            super.paintComponent(graphics);
-            Graphics2D g = (Graphics2D) graphics.create();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, alpha));
-            for (MovieRow row : rows) {
-                java.awt.geom.Ellipse2D circle = circle(row);
-                g.setClip(circle);
-                paintFlag(g, row.country(), circle);
-                g.setClip(null);
-                g.setStroke(new BasicStroke(row.equals(selected) ? 4f : 1.5f));
-                g.setColor(row.equals(selected) ? new Color(37, 99, 235) : ownerColor(row.owner()));
-                g.draw(circle);
-                g.setColor(Color.BLACK);
-                g.setFont(g.getFont().deriveFont(11f));
-                g.drawString(row.name(), (int) circle.getCenterX() - 18, (int) circle.getMaxY() + 14);
-            }
-            g.dispose();
-        }
-
-        private java.awt.geom.Ellipse2D circle(MovieRow row) {
-            int size = Math.max(34, Math.min(82, row.oscars() * 8 + 30));
-            int x = 30 + Math.floorMod(row.x(), Math.max(1, getWidth() - size - 60));
-            int y = 30 + Math.floorMod(row.y(), Math.max(1, getHeight() - size - 70));
-            return new java.awt.geom.Ellipse2D.Double(x, y, size, size);
-        }
-
-        private Color ownerColor(String owner) {
-            int hash = owner == null ? 0 : owner.hashCode();
-            float hue = Math.floorMod(hash, 360) / 360f;
-            return Color.getHSBColor(hue, 0.68f, 0.72f);
-        }
-
-        private void paintFlag(Graphics2D g, String country, java.awt.geom.Ellipse2D circle) {
-            int x = (int) circle.getX();
-            int y = (int) circle.getY();
-            int w = (int) circle.getWidth();
-            int h = (int) circle.getHeight();
-            if ("ITALY".equals(country)) {
-                g.setColor(new Color(0, 146, 70));
-                g.fillRect(x, y, w / 3, h);
-                g.setColor(Color.WHITE);
-                g.fillRect(x + w / 3, y, w / 3, h);
-                g.setColor(new Color(206, 43, 55));
-                g.fillRect(x + 2 * w / 3, y, w, h);
-            } else if ("CHINA".equals(country)) {
-                g.setColor(new Color(222, 41, 16));
-                g.fillRect(x, y, w, h);
-                g.setColor(new Color(255, 222, 0));
-                g.fillPolygon(star(x + w * 0.28, y + h * 0.32, w * 0.13, w * 0.055));
-            } else {
-                g.setColor(Color.WHITE);
-                g.fillRect(x, y, w, h);
-                g.setColor(new Color(188, 0, 45));
-                g.fillOval(x + w / 2 - w / 5, y + h / 2 - h / 5, 2 * w / 5, 2 * h / 5);
-            }
-        }
-
-        private Polygon star(double centerX, double centerY, double outerRadius, double innerRadius) {
-            Polygon polygon = new Polygon();
-            for (int i = 0; i < 10; i++) {
-                double angle = -Math.PI / 2 + i * Math.PI / 5;
-                double radius = i % 2 == 0 ? outerRadius : innerRadius;
-                polygon.addPoint(
-                    (int) Math.round(centerX + Math.cos(angle) * radius),
-                    (int) Math.round(centerY + Math.sin(angle) * radius)
-                );
-            }
-            return polygon;
-        }
-    }
-
-    private static final class MovieEditorDialog extends javax.swing.JDialog {
-        private final JTextField key = new JTextField();
-        private final JTextField name = new JTextField();
-        private final JTextField x = new JTextField();
-        private final JTextField y = new JTextField();
-        private final JTextField oscars = new JTextField();
-        private final JComboBox<MovieGenre> genre = new JComboBox<>(MovieGenre.values());
-        private final JComboBox<MpaaRating> rating = new JComboBox<>(MpaaRating.values());
-        private final JTextField director = new JTextField("Director");
-        private final JTextField weight = new JTextField("70.0");
-        private final JTextField passportId = new JTextField();
-        private final JComboBox<Country> country = new JComboBox<>(Country.values());
-        private final JTextField locationX = new JTextField("0");
-        private final JTextField locationY = new JTextField("0.0");
-        private final JTextField locationName = new JTextField("studio");
-        private final JLabel validation = new JLabel(" ");
-        private Movie movie;
-        private boolean saved;
-
-        private final Function<String, String> translator;
-
-        private MovieEditorDialog(JFrame owner, MovieRow row, Function<String, String> translator) {
-            super(owner, row == null ? translator.apply("button.add") : translator.apply("button.edit"), true);
-            this.translator = translator;
-            setLayout(new BorderLayout(10, 10));
-            JPanel fields = new JPanel(new GridLayout(0, 2, 0, 0));
-            addField(fields, "field.key", key);
-            addField(fields, "field.name", name);
-            addField(fields, "field.coordinateX", x);
-            addField(fields, "field.coordinateY", y);
-            addField(fields, "field.oscars", oscars);
-            addField(fields, "field.genre", genre);
-            addField(fields, "field.rating", rating);
-            addField(fields, "field.director", director);
-            addField(fields, "field.weight", weight);
-            addField(fields, "field.passportId", passportId);
-            addField(fields, "field.country", country);
-            addField(fields, "field.locationX", locationX);
-            addField(fields, "field.locationY", locationY);
-            addField(fields, "field.locationName", locationName);
-            add(fields, BorderLayout.CENTER);
-            validation.setOpaque(true);
-            validation.setBackground(new Color(254, 249, 195));
-            validation.setBorder(BorderFactory.createLineBorder(new Color(202, 138, 4)));
-            validation.setHorizontalAlignment(JLabel.CENTER);
-            add(validation, BorderLayout.NORTH);
-            JPanel buttons = new JPanel(new GridLayout(1, 3, 0, 0));
-            JButton save = new JButton(translator.apply("button.save"));
-            JButton delete = new JButton(translator.apply("button.delete"));
-            JButton cancel = new JButton(translator.apply("button.cancel"));
-            buttons.add(save);
-            buttons.add(delete);
-            buttons.add(cancel);
-            add(buttons, BorderLayout.SOUTH);
-            save.addActionListener(event -> {
-                String error = validateInput();
-                if (error != null) {
-                    showValidation(error);
-                    return;
-                }
-                try {
-                    movie = buildMovie();
-                    saved = true;
-                    setVisible(false);
-                } catch (IllegalArgumentException | NullPointerException e) {
-                    showValidation(e.getMessage());
-                }
-            });
-            delete.setEnabled(false);
-            cancel.addActionListener(event -> setVisible(false));
-            if (row != null) {
-                key.setText(row.key());
-                key.setEnabled(false);
-                name.setText(row.name());
-                x.setText(Integer.toString(row.x()));
-                y.setText(Integer.toString(row.y()));
-                oscars.setText(Integer.toString(row.oscars()));
-                genre.setSelectedItem(MovieGenre.valueOf(row.genre()));
-                rating.setSelectedItem(MpaaRating.valueOf(row.rating()));
-                director.setText(row.director().isBlank() ? "Director" : row.director());
-                if (!row.weight().isBlank()) {
-                    weight.setText(row.weight());
-                }
-                if (!row.country().isBlank()) {
-                    country.setSelectedItem(Country.valueOf(row.country()));
-                }
-                passportId.setText(row.passportId());
-                locationX.setText(row.locationX().isBlank() ? "0" : row.locationX());
-                locationY.setText(row.locationY().isBlank() ? "0.0" : row.locationY());
-                locationName.setText(row.locationName());
-            }
-            pack();
-            setSize(520, 420);
-            setLocationRelativeTo(owner);
-        }
-
-        private void addField(JPanel panel, String label, JComponent field) {
-            JLabel cell = new JLabel(translator.apply(label));
-            cell.setOpaque(true);
-            cell.setBackground(SOFT);
-            cell.setBorder(BorderFactory.createLineBorder(BORDER));
-            panel.add(cell);
-            panel.add(field);
-        }
-
-        private boolean saved() {
-            return saved;
-        }
-
-        private String key() {
-            return key.getText().trim();
-        }
-
-        private Movie movie() {
-            return movie;
-        }
-
-        private String validateInput() {
-            if (key.isEnabled() && key.getText().trim().isBlank()) {
-                return "Key cannot be null or blank";
-            }
-            if (name.getText().trim().isBlank()) {
-                return "Movie.name cannot be empty or null";
-            }
-            if (parseInteger(x, "Coordinates.X can not be null") == null) {
-                return "Coordinates.X must be an integer";
-            }
-            if (parseInteger(y, "Coordinates.Y can not be null") == null) {
-                return "Coordinates.Y must be an integer";
-            }
-            Integer oscarsValue = parseInteger(oscars, "Movie.oscarsCount must be greater than zero");
-            if (oscarsValue == null) {
-                return "Movie.oscarsCount must be an integer";
-            }
-            if (oscarsValue <= 0) {
-                return "Movie.oscarsCount must be greater than zero";
-            }
-            if (genre.getSelectedItem() == null) {
-                return "Movie.genre cannot be null";
-            }
-            if (rating.getSelectedItem() == null) {
-                return "Movie.mpaaRating cannot be null";
-            }
-            if (director.getText().trim().isBlank()) {
-                return "Person.name cannot be empty or null";
-            }
-            Double weightValue = parseDouble(weight);
-            if (weightValue == null) {
-                return "Person.weight must be a number";
-            }
-            if (weightValue <= 0) {
-                return "Person.weight must be greater than zero";
-            }
-            if (country.getSelectedItem() == null) {
-                return "Person.nationality cannot be null";
-            }
-            String passportValue = passportId.getText().trim();
-            if (!passportValue.isEmpty() && passportValue.length() < 8) {
-                return "Person.passportID must be a string with length greater then or equal to 8 or null";
-            }
-            if (parseLong(locationX) == null) {
-                return "Location.x must be a long integer";
-            }
-            if (parseDouble(locationY) == null) {
-                return "Location.y must be a number";
-            }
-            if (locationName.getText() != null && locationName.getText().isBlank() && !locationName.getText().isEmpty()) {
-                return "Location.name cannot be empty";
-            }
-            return null;
-        }
-
-        private Integer parseInteger(JTextField field, String nullMessage) {
-            String text = field.getText().trim();
-            if (text.isBlank()) {
-                showValidation(nullMessage);
-                return null;
-            }
-            try {
-                return Integer.parseInt(text);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-
-        private Double parseDouble(JTextField field) {
-            try {
-                return Double.parseDouble(field.getText().trim());
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-
-        private Long parseLong(JTextField field) {
-            try {
-                return Long.parseLong(field.getText().trim());
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-
-        private void showValidation(String message) {
-            validation.setText(message == null ? " " : message);
-            validation.setBackground(new Color(254, 226, 226));
-            validation.setBorder(BorderFactory.createLineBorder(new Color(220, 38, 38)));
-        }
-
-        private Movie buildMovie() {
-            Person person = new Person(
-                director.getText().trim(),
-                Double.parseDouble(weight.getText().trim()),
-                passportId.getText().trim().isEmpty() ? null : passportId.getText().trim(),
-                (Country) country.getSelectedItem(),
-                new Location(
-                    Long.parseLong(locationX.getText().trim()),
-                    Double.parseDouble(locationY.getText().trim()),
-                    locationName.getText().trim().isEmpty()
-                        ? null
-                        : locationName.getText().trim()
-                )
-            );
-            return new Movie(
-                name.getText().trim(),
-                new Coordinates(Integer.parseInt(x.getText().trim()), Integer.parseInt(y.getText().trim())),
-                Integer.parseInt(oscars.getText().trim()),
-                (MovieGenre) genre.getSelectedItem(),
-                (MpaaRating) rating.getSelectedItem(),
-                person
-            );
-        }
     }
 }

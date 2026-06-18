@@ -85,7 +85,6 @@ public class ServerApp {
             INTERNAL_OWNER_LOGIN
         );
         ServerCommandInvoker commandInvoker = new ServerCommandInvoker();
-        UpdateBroadcaster updateBroadcaster = new UpdateBroadcaster();
         ServerContext serverConsoleContext = new ServerContext(
             collectionManager,
             movieRepository,
@@ -107,6 +106,7 @@ public class ServerApp {
             );
             ForkJoinPool responsePool = new ForkJoinPool()
         ) {
+            UpdateBroadcaster updateBroadcaster = new UpdateBroadcaster(responsePool);
             serverChannel.bind(new InetSocketAddress(port));
             serverChannel.configureBlocking(true);
             LOGGER.info("Server started on port {}", port);
@@ -262,7 +262,7 @@ public class ServerApp {
             } finally {
                 closeClientChannel(clientChannel);
             }
-        }).join();
+        });
     }
 
     private static boolean shouldBroadcastUpdate(SharedCommand command) {
@@ -416,6 +416,11 @@ public class ServerApp {
 
     private static final class UpdateBroadcaster {
         private final java.util.Set<SocketChannel> subscribers = ConcurrentHashMap.newKeySet();
+        private final ForkJoinPool responsePool;
+
+        private UpdateBroadcaster(ForkJoinPool responsePool) {
+            this.responsePool = responsePool;
+        }
 
         private void subscribe(SocketChannel channel) {
             subscribers.add(channel);
@@ -424,14 +429,16 @@ public class ServerApp {
         private void broadcast() {
             CommandResponse update = CommandResponse.success("collection-updated");
             for (SocketChannel subscriber : subscribers) {
-                try {
-                    synchronized (subscriber) {
-                        writeResponse(subscriber, update);
+                responsePool.submit(() -> {
+                    try {
+                        synchronized (subscriber) {
+                            writeResponse(subscriber, update);
+                        }
+                    } catch (IOException e) {
+                        subscribers.remove(subscriber);
+                        closeClientChannel(subscriber);
                     }
-                } catch (IOException e) {
-                    subscribers.remove(subscriber);
-                    closeClientChannel(subscriber);
-                }
+                });
             }
         }
     }
